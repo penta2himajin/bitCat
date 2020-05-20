@@ -1,0 +1,6 @@
+{
+    "runner.extensionMap": {
+        "nim": "nim c -define:ssl --run $fullFileName",
+    },
+    "nim.buildCommand": "c --d:ssl"
+}
