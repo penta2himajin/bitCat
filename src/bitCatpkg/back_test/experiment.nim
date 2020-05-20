@@ -1,5 +1,5 @@
 import options, httpclient, times, json, os
-import types, library
+import ../types, ../library
 
 
 proc simulateTrendingMovingDifferenceAverage(data: seq[chart], budget: float): score =

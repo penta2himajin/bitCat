@@ -1,5 +1,5 @@
-import library, strutils, times, math
-import types, library, API/liquid
+import strutils, times, math
+import ../types, ../library, ../API/liquid
 
 #[ Simulator with full-auto parameters ]#
 proc simulateSimpleMovingDifference*(data: seq[chart], budget: float, score_threshold: float = 0.0): score =
@@ -241,7 +241,7 @@ when isMainModule:
     echo "SMD max: ", data.simulateSimpleMovingDifference(budget, score_threshold)
     #echo "SMDM max: ", data.simulateSimpleMovingDifferentialMean(budget, score_threshold)
     echo "MMDM max: ", data.simulateMovingDifferentialMeanPolarReversal(budget, score_threshold)
-    echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 850, true)                # threshold: 1500
+    echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 850)                # threshold: 1500
     echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 1500)                # threshold: 1500
     echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 7000)                # threshold: 1500
 
