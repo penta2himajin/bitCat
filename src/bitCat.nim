@@ -1,5 +1,5 @@
 from os import getEnv
-import bitCatpkg/library, bitCatpkg/types, bitCatpkg/API/liquid
+import bitCatpkg/library, bitCatpkg/types, bitCatpkg/wrapper/liquid
 
 
 when isMainModule:

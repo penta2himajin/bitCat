@@ -1,5 +1,5 @@
 import gnuplot, sugar, strutils, sequtils, strformat
-import ../types, ../library, ../API/liquid
+import ../types, ../library, ../wrapper/liquid
 
 
 proc plotter*[T](horizontal_axis: seq[T], x_label: string = "", y_label:string = "", args: varargs[(seq[T], string)]) =

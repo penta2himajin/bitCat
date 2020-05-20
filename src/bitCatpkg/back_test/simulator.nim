@@ -1,5 +1,5 @@
 import strutils, times, math
-import ../types, ../library, ../API/liquid
+import ../types, ../library, ../wrapper/liquid
 
 #[ Simulator with full-auto parameters ]#
 proc simulateSimpleMovingDifference*(data: seq[chart], budget: float, score_threshold: float = 0.0): score =
