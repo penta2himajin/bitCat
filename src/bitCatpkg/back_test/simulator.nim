@@ -168,7 +168,7 @@ proc simulateSimpleMovingDifference_arg*(data: seq[chart], budget: float, thresh
 
     max_score.threshold = threshold.float
     max_score.score = score
-    score_chart = newSeqFromCount[float](data.len - score_chart.len) & score_chart
+    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
     
     (max_score, score_chart)
 
@@ -229,7 +229,7 @@ proc simulateMovingDifferentialMeanPolarReversal_arg(data: seq[chart], budget: f
 
     max_score.duration = duration
     max_score.score = duration_score
-    score_chart = newSeqFromCount[float](data.len - score_chart.len) & score_chart
+    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
 
     (max_score, score_chart)
 
@@ -259,14 +259,22 @@ when isMainModule:
         smd_850 = data.simulateSimpleMovingDifference_arg(budget, 850)
         smd_1500 = data.simulateSimpleMovingDifference_arg(budget, 1500)
         smd_7000 = data.simulateSimpleMovingDifference_arg(budget, 7000)
+        mdmpr_max = data.simulateMovingDifferentialMeanPolarReversal(budget, score_threshold)
+        mdmpr_max_score_chart = data.simulateMovingDifferentialMeanPolarReversal_arg(budget, mdmpr_max.duration.int)[1]
         horizon = newSeqFromCount[float](data.len)
 
-    echo "SMD max : ", smd_max
-    echo "SMD 850 : ", smd_850[0]                # threshold: 1500
-    echo "SMD 1500: ", smd_1500[0]                # threshold: 1500
-    echo "SMD 7000: ", smd_7000[0]                # threshold: 1500
+    echo "SMD max  : ", smd_max
+    echo "SMD 850  : ", smd_850[0]                # threshold: 1500
+    echo "SMD 1500 : ", smd_1500[0]                # threshold: 1500
+    echo "SMD 7000 : ", smd_7000[0]                # threshold: 1500
+    echo "MDMPR max: ", mdmpr_max
 
-    horizon.plotter("", "", (smd_max_score_chart, &"SMD ({smd_max.threshold.int})"), (smd_850[1], "SMD (850)"), (smd_1500[1], "SMD (1500)"), (smd_7000[1], "SMD (7000)"))
+    horizon.plotter("", "",
+        (smd_max_score_chart, &"SMD ({smd_max.threshold.int})"),
+        (smd_850[1], "SMD (850)"),
+        (smd_1500[1], "SMD (1500)"),
+        (smd_7000[1], "SMD (7000)"),
+        (mdmpr_max_score_chart, &"MDMPR ({mdmpr_max.duration.int})"))
 
     echo "press any key to continue..."
     discard stdin.readChar
