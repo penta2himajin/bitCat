@@ -1,14 +1,8 @@
-from os import getEnv
-import bitCatpkg/library, bitCatpkg/types, bitCatpkg/wrapper/liquid
+import bitCatpkg/library, bitCatpkg/types, bitCatpkg/wrapper/liquid, token
 
 
 when isMainModule:
-  const api: api = (
-    key: getEnv "Key",
-    secret: getEnv "Secret"
-  )
-
-  api.tradeSimpleMovingDifference(getProduct, getChart, postOrder, getAccount, period_string="1min", threshold=850)
+  api_token.tradeSimpleMovingDifference(getProduct, getChart, postOrder, getAccount, period_string="1min", threshold=850)
 
 #[ 
 
