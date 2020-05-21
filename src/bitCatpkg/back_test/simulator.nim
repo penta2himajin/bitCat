@@ -1,4 +1,4 @@
-import strutils, times
+import strutils, times, strformat
 import ../types, ../library, ../wrapper/liquid
 
 #[ Simulator with full-auto parameters ]#
@@ -125,13 +125,15 @@ proc simulateMovingDifferentialMeanPolarReversal(data: seq[chart], budget: float
     max_score
 
 #[ Simulator with Argument parameters ]#
-proc simulateSimpleMovingDifference_arg*(data: seq[chart], budget: float, threshold: int, visualize: bool = false): score =
+proc simulateSimpleMovingDifference_arg*(data: seq[chart], budget: float, threshold: int, visualize: bool = false): (score, seq[float]) =
     let
         differences = data.getDifference
     var
         max_score: score
         score = 0
         reserve = 0.0
+        score_chart = newSeq[float]()
+
     if visualize:
         echo "Threshold: ", threshold
 
@@ -156,16 +158,21 @@ proc simulateSimpleMovingDifference_arg*(data: seq[chart], budget: float, thresh
                     echo "SELL: ", score + int budget,
                         " net: ", score,
                         " time: ", data[index + 1].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
+        if reserve != 0:
+            score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
+        else:
+            score_chart.add score.float * 100 / budget
     
     if reserve != 0:
         score += int truncate(data[data.len - 1].close * reserve, 8) - budget
 
     max_score.threshold = threshold.float
     max_score.score = score
+    score_chart = newSeqFromCount[float](data.len - score_chart.len) & score_chart
     
-    max_score
+    (max_score, score_chart)
 
-proc simulateMovingDifferentialMeanPolarReversal_arg(data: seq[chart], budget: float, duration: int, visualize: bool = false): score =
+proc simulateMovingDifferentialMeanPolarReversal_arg(data: seq[chart], budget: float, duration: int, visualize: bool = false): (score, seq[float]) =
     let differences = data.getDifference
     var
         max_score = (
@@ -173,12 +180,14 @@ proc simulateMovingDifferentialMeanPolarReversal_arg(data: seq[chart], budget: f
             threshold: 0.0,
             score: 0
         )
+        score_chart = newSeq[float]()
         duration_score = 0
         reserve = 0.0
         point_old = differences[0..duration - 1].average
         point_now = differences[1..duration].average
         trend = if point_now > point_old: true else: false
     point_old = point_now
+
     if visualize:
         echo "Duration: ", duration
 
@@ -209,14 +218,20 @@ proc simulateMovingDifferentialMeanPolarReversal_arg(data: seq[chart], budget: f
                             " time: ", data[index + duration].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
 
         point_old = point_now
+
+        if reserve != 0:
+            score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
+        else:
+            score_chart.add duration_score.float * 100 / budget
     
     if reserve != 0:
         duration_score += int truncate(data[data.len - 1].close * reserve, 4) - budget
 
     max_score.duration = duration
     max_score.score = duration_score
+    score_chart = newSeqFromCount[float](data.len - score_chart.len) & score_chart
 
-    max_score
+    (max_score, score_chart)
 
 
 when isMainModule:
@@ -238,10 +253,20 @@ when isMainModule:
     let data = getChart(symbol, period, size)
     echo "*****************************"
 
-    echo "SMD max: ", data.simulateSimpleMovingDifference(budget, score_threshold)
-    echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 850)                # threshold: 1500
-    echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 1500)                # threshold: 1500
-    echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 7000)                # threshold: 1500
+    let
+        smd_max = data.simulateSimpleMovingDifference(budget, score_threshold)
+        smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
+        smd_850 = data.simulateSimpleMovingDifference_arg(budget, 850)
+        smd_1500 = data.simulateSimpleMovingDifference_arg(budget, 1500)
+        smd_7000 = data.simulateSimpleMovingDifference_arg(budget, 7000)
+        horizon = newSeqFromCount[float](data.len)
+
+    echo "SMD max : ", smd_max
+    echo "SMD 850 : ", smd_850[0]                # threshold: 1500
+    echo "SMD 1500: ", smd_1500[0]                # threshold: 1500
+    echo "SMD 7000: ", smd_7000[0]                # threshold: 1500
+
+    horizon.plotter("", "", (smd_max_score_chart, &"SMD ({smd_max.threshold.int})"), (smd_850[1], "SMD (850)"), (smd_1500[1], "SMD (1500)"), (smd_7000[1], "SMD (7000)"))
 
     echo "press any key to continue..."
     discard stdin.readChar

@@ -1,4 +1,4 @@
-import httpclient, times, json, sugar, math, os, tables, strutils
+import httpclient, times, json, sugar, math, os, tables, strutils, gnuplot, strformat
 import types
 from sequtils import zip
 
@@ -30,6 +30,24 @@ func getMovingAverage*(data: seq[chart], duration: int): seq[float] =
 
 proc sleepTimer*(unixnow: int64, time: int) =
     sleep(int((unixnow + time - now().toTime.toUnix) * 1000))
+
+proc plotter*[T](horizontal_axis: seq[T], x_label: string = "", y_label:string = "", args: varargs[(seq[T], string)]) =
+    if x_label != "": cmd &"set xlabel '{x_label}'"
+    if x_label != "": cmd &"set ylabel '{y_label}'"
+    cmd "set grid"
+
+    for (arg, title) in args:
+        if horizontal_axis.len != arg.len:
+            var e: ref RangeError
+            new e
+            e.msg = "horizontal_axis length not equal to arg length: " & $horizontal_axis.len & " == " & $arg.len
+            raise e
+        
+        plot horizontal_axis, arg, title
+
+proc newSeqFromCount*[T](length: int): seq[T] =
+    collect(newSeq):
+        for i in countup(1, length): i.T
 
 #[ Trading functions ]#
 proc tradeSimpleMovingDifference*(api: api, product: proc, chart: proc, order: proc, account: proc, period_string: string, threshold: int) =
