@@ -16,10 +16,17 @@ func truncate*(num: float, digit: int): float =
     num * 10.0 ^ digit / 10.0 ^ digit
 
 func getDifference*(data: seq[chart]): seq[float] =
-    let difference = collect(newSeq):
+    collect(newSeq):
         for (old, now) in zip(data[0 .. data.len - 2], data[1 .. data.len - 1]):
             now.close - old.close
-    return difference
+
+func getMovingAverage*(data: seq[chart], duration: int): seq[float] =
+    collect(newSeq):
+        for index in 0..data.len - duration:
+            let c = collect(newSeq):
+                for d in data[index..index + duration - 1]:
+                    d.close
+            c.average
 
 proc sleepTimer*(unixnow: int64, time: int) =
     sleep(int((unixnow + time - now().toTime.toUnix) * 1000))

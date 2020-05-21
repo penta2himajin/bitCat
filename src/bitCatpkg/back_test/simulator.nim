@@ -1,4 +1,4 @@
-import strutils, times, math
+import strutils, times
 import ../types, ../library, ../wrapper/liquid
 
 #[ Simulator with full-auto parameters ]#
@@ -239,8 +239,6 @@ when isMainModule:
     echo "*****************************"
 
     echo "SMD max: ", data.simulateSimpleMovingDifference(budget, score_threshold)
-    #echo "SMDM max: ", data.simulateSimpleMovingDifferentialMean(budget, score_threshold)
-    echo "MMDM max: ", data.simulateMovingDifferentialMeanPolarReversal(budget, score_threshold)
     echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 850)                # threshold: 1500
     echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 1500)                # threshold: 1500
     echo "SMD max: ", data.simulateSimpleMovingDifference_arg(budget, 7000)                # threshold: 1500
