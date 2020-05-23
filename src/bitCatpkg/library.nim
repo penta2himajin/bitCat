@@ -13,7 +13,7 @@ func average*[T](a: seq[T]): T =
     T a.sum / float a.len
 
 func truncate*(num: float, digit: int): float =
-    num * 10.0 ^ digit / 10.0 ^ digit
+    floor(num * 10.0 ^ digit) / 10.0 ^ digit
 
 func getDifference*(data: seq[chart]): seq[float] =
     collect(newSeq):
@@ -32,8 +32,11 @@ proc sleepTimer*(unixnow: int64, time: int) =
     sleep(int((unixnow + time - now().toTime.toUnix) * 1000))
 
 proc plotter*[T](horizontal_axis: seq[T], x_label: string = "", y_label:string = "", args: varargs[(seq[T], string)]) =
-    if x_label != "": cmd &"set xlabel '{x_label}'"
-    if x_label != "": cmd &"set ylabel '{y_label}'"
+    if x_label != "": cmd &"set xlabel '{x_label}' tc rgb \"white\""
+    if x_label != "": cmd &"set ylabel '{y_label}' tc rgb \"white\""
+    cmd "set object 1 rect behind from screen 0,0 to screen 1,1 fc rgb \"#333631\" fillstyle solid 1.0"
+    cmd "set border lc rgb \"white\""
+    cmd "set key tc rgb \"white\""
     cmd "set grid"
 
     for (arg, title) in args:
@@ -172,5 +175,75 @@ proc tradeMovingDifferentialMeanPolarReversal*(api: api, product: proc, chart: p
                     finally: discard
 
         point_old = point_now
+        echo "\n__________________________________________\n"
+        unixnow.sleepTimer period
+
+proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, order: proc, account: proc, period_string: string, threshold: int) =
+    echo "Algorithm: Simple Threshold Polar Reversal"
+    echo "Threshold: ", threshold
+    echo "******************************************\n"
+
+    var
+        period: int
+        data = chart("btcjpy", period_string, 2)
+        trend = if data[0].close < data[1].close: true else: false
+        extreme_point = if trend: data[1].close else: data[0].close
+
+    case period_string # sleepTimer(sec)
+    of  "1min": period = 60
+    of  "5min": period = 300
+    of "15min": period = 900
+    of "30min": period = 1800
+    of "1hour": period = 3600
+    of "4hour": period = 14400
+    of  "1day": period = 86400
+
+    while true:
+        let
+            unixnow = now().toTime.toUnix
+            product = product("btcjpy")
+            now_price = product.ask
+            accounts = api.account()
+            reserve = accounts["BTC"]
+            fiat = accounts["JPY"]
+        
+        echo "now at ", now().format("yyyy-MM-dd HH:mm:ss"), "\n"
+
+        echo "JPY: ", fiat
+        echo "BTC: ", reserve, "\n"
+
+        echo "rate (BTCJPY): ", product.last_traded_price
+        echo "trend: ", trend
+        echo "extreme point: ", extreme_point
+
+        if not trend:
+            if now_price > extreme_point:
+                trend = true
+                    
+                if reserve == 0: # Buy Operation
+                    echo "\n*** BUY OPERATION ***"
+                    try:
+                        echo api.order("market", 5, "buy", truncate(fiat / product.ask - 0.00002, 8))
+                    except HttpRequestError:
+                        echo "Operation Failed."
+                    finally: discard
+            else:
+                if now_price + threshold.float < extreme_point:
+                    extreme_point = now_price + threshold.float
+        else:
+            if now_price < extreme_point:
+                trend = false
+
+                if reserve != 0: # Sell Operation
+                    echo "\n### SELL OPERATION ###"
+                    try:
+                        echo api.order("market", 5, "sell", reserve)
+                    except HttpRequestError:
+                        echo "Operation Failed."
+                    finally: discard
+            else:
+                if now_price - threshold.float > extreme_point:
+                    extreme_point = now_price - threshold.float
+        
         echo "\n__________________________________________\n"
         unixnow.sleepTimer period
