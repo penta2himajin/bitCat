@@ -13,7 +13,7 @@ func average*[T](a: seq[T]): T =
     T a.sum / float a.len
 
 func truncate*(num: float, digit: int): float =
-    floor(num * 10.0 ^ digit) / 10.0 ^ digit
+    int(num * 10.0 ^ digit) / int(10.0 ^ digit)
 
 func getDifference*(data: seq[chart]): seq[float] =
     collect(newSeq):
@@ -202,7 +202,7 @@ proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, or
         let
             unixnow = now().toTime.toUnix
             product = product("btcjpy")
-            now_price = product.ask
+            now_price = product.bid
             accounts = api.account()
             reserve = accounts["BTC"]
             fiat = accounts["JPY"]
@@ -229,7 +229,7 @@ proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, or
                     finally: discard
             else:
                 if now_price + threshold.float < extreme_point:
-                    extreme_point = now_price + threshold.float
+                    extreme_point = product.ask + threshold.float
         else:
             if now_price < extreme_point:
                 trend = false
@@ -243,7 +243,7 @@ proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, or
                     finally: discard
             else:
                 if now_price - threshold.float > extreme_point:
-                    extreme_point = now_price - threshold.float
+                    extreme_point = product.ask - threshold.float
         
         echo "\n__________________________________________\n"
         unixnow.sleepTimer period

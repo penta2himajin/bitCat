@@ -169,48 +169,6 @@ proc simulateMovingDifferentialMeanPolarReversal(data: seq[chart], budget: float
 
     max_score
 
-proc simulateSimplePLLimit(data: seq[chart], budget: float, score_threshold: float = 0.0): score =
-    let
-        differences = data.getDifference
-    
-    var
-        max_score: score
-    
-    for threshold in countup(0, 10000, 50):
-        var
-            score = 0
-            buy_price = 0.0
-            reserve = 0.0
-
-        for index in countup(0, data.len - 2):
-            let
-                now_price = data[index + 1].close
-                difference = differences[index].int
-
-            if difference > -threshold:
-                if reserve == 0:
-                    reserve = truncate((budget + float score) / now_price, 8)
-                    score -= int truncate(now_price * reserve, 8) - budget
-                    buy_price = now_price
-                
-            if now_price > buy_price * 1.1 or buy_price > now_price:
-                if reserve != 0:
-                    score += int truncate(now_price * reserve, 8) - budget
-                    reserve = 0.0
-                    buy_price = 0
-        
-        if reserve != 0:
-            score += int truncate(data[data.len - 1].close * reserve, 8) - budget
-        
-        if score > max_score.score:
-            max_score.threshold = threshold.float
-            max_score.score = score
-        
-        if score.float > budget * score_threshold:
-            echo "threshold: ", threshold, " score: ", score
-    
-    max_score
-
 proc simulateSimpleThresholdPolarReversal(data: seq[chart], budget: float, score_threshold: float = 0.0): score =
     var
         max_score: score
@@ -240,7 +198,7 @@ proc simulateSimpleThresholdPolarReversal(data: seq[chart], budget: float, score
                     trend = false
 
                     if reserve != 0:
-                        score += int truncate(now_price * reserve, 6) - budget
+                        score += int truncate(now_price * reserve, 8) - budget
                         reserve = 0.0
                 else:
                     if now_price - threshold.float > extreme_point:
@@ -412,48 +370,6 @@ proc simulateMovingDifferentialMeanPolarReversal_arg(data: seq[chart], budget: f
 
     (max_score, score_chart)
 
-proc simulateSimplePLLimit_arg(data: seq[chart], budget: float, threshold: int, visualize: bool = false): (score, seq[float]) =
-    let
-        differences = data.getDifference
-    
-    var
-        max_score: score
-        score_chart = newSeq[float]()
-        score = 0
-        buy_price = 0.0
-        reserve = 0.0
-
-    for index in countup(0, data.len - 2):
-        let
-            now_price = data[index + 1].close
-            difference = differences[index].int
-
-        if difference > -threshold:
-            if reserve == 0:
-                reserve = truncate((budget + float score) / now_price, 8)
-                score -= int truncate(now_price * reserve, 8) - budget
-                buy_price = now_price
-                
-        if now_price > buy_price * 1.01 or buy_price > now_price:
-            if reserve != 0:
-                score += int truncate(now_price * reserve, 8) - budget
-                reserve = 0.0
-                buy_price = 0
-        
-        if reserve != 0:
-            score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
-        else:
-            score_chart.add score.float * 100 / budget
-        
-    if reserve != 0:
-        score += int truncate(data[data.len - 1].close * reserve, 8) - budget
-
-    max_score.threshold = threshold.float
-    max_score.score = score
-    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
-    
-    (max_score, score_chart)
-
 proc simulateSimpleThresholdPolarReversal_arg(data: seq[chart], budget: float, threshold: int, visualize: bool = false): (score, seq[float]) =
     var
         max_score: score
@@ -476,7 +392,7 @@ proc simulateSimpleThresholdPolarReversal_arg(data: seq[chart], budget: float, t
                     if visualize:
                         echo "BUY : ", score + truncate(reserve * now_price, 8).int,
                             " net: ", (score + truncate(reserve * now_price, 8).int) - budget.int,
-                            " time: ", data[index + 2].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
+                            " time: ", data[index].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
             else:
                 if now_price + threshold.float < extreme_point:
                     extreme_point = now_price + threshold.float
@@ -485,12 +401,12 @@ proc simulateSimpleThresholdPolarReversal_arg(data: seq[chart], budget: float, t
                 trend = false
 
                 if reserve != 0:
-                    score += int truncate(now_price * reserve, 6) - budget
+                    score += int truncate(now_price * reserve, 8) - budget
                     reserve = 0.0
                     if visualize:
                         echo "SELL: ", score + int budget,
                             " net: ", score,
-                            " time: ", data[index + 2].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
+                            " time: ", data[index].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
             else:
                 if now_price - threshold.float > extreme_point:
                     extreme_point = now_price - threshold.float
@@ -558,7 +474,7 @@ when isMainModule:
         (smd_700[1], "SMD (700)"),
         (smd_850[1], "SMD (850)"),
         (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price_threshold.truncate(4) * 100}%)"),
-        (tmd_750[1], "TMD (750, 99.95%)"),
+        (tmd_750[1], "TMD (threshold: 750, price threshold: 99.95%)"),
         (mdmpr_max_score_chart, &"MDMPR (duration: {mdmpr_max.duration.int})"),
         (stpr_max_score_chart, &"STPR (threshold: {stpr_max.threshold.int})"),
         (stpr_57[1], "STPR (threshold: 57)")
