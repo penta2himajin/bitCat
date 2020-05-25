@@ -15,6 +15,7 @@ proc getProducts*(): seq[product] =
                     symbol: product_json["currency_pair_code"].getStr,
                     ask: product_json["high_market_ask"].getStr.parseFloat,
                     bid: product_json["low_market_bid"].getStr.parseFloat,
+                    spread: product_json["market_ask"].getFloat - product_json["market_bid"].getFloat,
                     last_traded_price: product_json["last_traded_price"].getFloat,
                     timestamp: product_json["timestamp"].getStr.parseFloat.int
                 )
@@ -33,6 +34,7 @@ proc getProduct*(symbol: string): product =
                 symbol: product_json["currency_pair_code"].getStr,
                 ask: product_json["market_ask"].getFloat,
                 bid: product_json["market_bid"].getFloat,
+                spread: product_json["market_ask"].getFloat - product_json["market_bid"].getFloat,
                 last_traded_price: product_json["last_traded_price"].getStr.parseFloat,
                 timestamp: product_json["timestamp"].getStr.parseFloat.int
             )

@@ -28,8 +28,8 @@ func getMovingAverage*(data: seq[chart], duration: int): seq[float] =
                     d.close
             c.average
 
-proc sleepTimer*(unixnow: int64, time: int) =
-    sleep(int((unixnow + time - now().toTime.toUnix) * 1000))
+proc sleepTimer*(unixfloatnow: float, time: int) =
+    sleep(floor((unixfloatnow + time.float - now().toTime.toUnixFloat) * 1000).int)
 
 proc plotter*[T](horizontal_axis: seq[T], x_label: string = "", y_label:string = "", args: varargs[(seq[T], string)]) =
     if x_label != "": cmd &"set xlabel '{x_label}' tc rgb \"white\""
@@ -219,6 +219,7 @@ proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, or
         if not trend:
             if now_price > extreme_point:
                 trend = true
+                extreme_point = product.ask - threshold.float
                     
                 if reserve == 0: # Buy Operation
                     echo "\n*** BUY OPERATION ***"
@@ -228,11 +229,12 @@ proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, or
                         echo "Operation Failed."
                     finally: discard
             else:
-                if now_price + threshold.float < extreme_point:
+                if product.ask + threshold.float < extreme_point:
                     extreme_point = product.ask + threshold.float
         else:
             if now_price < extreme_point:
                 trend = false
+                extreme_point = product.ask + threshold.float
 
                 if reserve != 0: # Sell Operation
                     echo "\n### SELL OPERATION ###"
@@ -242,8 +244,83 @@ proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, or
                         echo "Operation Failed."
                     finally: discard
             else:
-                if now_price - threshold.float > extreme_point:
+                if product.ask - threshold.float > extreme_point:
                     extreme_point = product.ask - threshold.float
         
+        echo "\n__________________________________________\n"
+        unixnow.sleepTimer period
+
+proc tradeSimplePolarReversal*(api: api, product: proc, chart: proc, order: proc, account: proc, period_string: string) =
+    echo "Algorithm: Simple Polar Reversal"
+    echo "******************************************\n"
+
+    var
+        period: int
+        data = chart("btcjpy", "1min", 2)
+        trend = if data[0].close < data[1].close: true else: false
+        extreme_point = if trend: data[1].close else: data[0].close
+
+    case period_string # sleepTimer(sec)
+    of  "5sec": period = 5
+    of "10sec": period = 10
+    of "15sec": period = 15
+    of "30sec": period = 30
+    of  "1min": period = 60
+    of  "5min": period = 300
+    of "15min": period = 900
+    of "30min": period = 1800
+    of "1hour": period = 3600
+    of "4hour": period = 14400
+    of  "1day": period = 86400
+
+    while true:
+        let
+            unixnow = now().toTime.toUnixFloat
+            product = product("btcjpy")
+            now_price = product.bid
+            accounts = api.account()
+            reserve = accounts["BTC"]
+            fiat = accounts["JPY"]
+
+        echo "now at ", now().format("yyyy-MM-dd HH:mm:ss"), "\n"
+
+        echo "JPY: ", fiat
+        echo "BTC: ", reserve, "\n"
+
+        echo "rate (BTCJPY): ", product.last_traded_price
+        echo "trend: ", trend
+        echo "extreme point: ", extreme_point
+
+        if not trend:
+            if now_price > extreme_point:
+                trend = true
+                extreme_point = product.bid - product.spread
+                    
+                if reserve == 0: # Buy Operation
+                    echo "\n*** BUY OPERATION ***"
+                    try:
+                        echo api.order("market", 5, "buy", truncate(fiat / product.ask - 0.00002, 8))
+                    except HttpRequestError:
+                        echo "Operation Failed."
+                    finally: discard
+            else:
+                if product.bid + product.spread < extreme_point:
+                    extreme_point = product.bid + product.spread
+        else:
+            if now_price < extreme_point:
+                trend = false
+                extreme_point = product.bid + product.spread
+
+                if reserve != 0: # Sell Operation
+                    echo "\n### SELL OPERATION ###"
+                    try:
+                        echo api.order("market", 5, "sell", reserve)
+                    except HttpRequestError:
+                        echo "Operation Failed."
+                    finally: discard
+            else:
+                if product.bid - product.spread > extreme_point:
+                    extreme_point = product.bid - product.spread
+
         echo "\n__________________________________________\n"
         unixnow.sleepTimer period

@@ -11,6 +11,7 @@ type
         symbol: string
         ask: float
         bid: float
+        spread: float
         last_traded_price: float
         timestamp: int
 

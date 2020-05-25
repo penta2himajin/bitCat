@@ -2,7 +2,7 @@ import bitCatpkg/library, bitCatpkg/types, bitCatpkg/wrapper/liquid, token
 
 
 when isMainModule:
-  api_token.tradeSimpleThresholdPolarReversal(getProduct, getChart, postOrder, getAccount, period_string="1min", threshold=57)
+  api_token.tradeSimplePolarReversal(getProduct, getChart, postOrder, getAccount, period_string="1min")
 
 #[ 
 
