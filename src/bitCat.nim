@@ -1,8 +1,8 @@
-import bitCatpkg/library, bitCatpkg/types, bitCatpkg/wrapper/liquid, token
+import bitCatpkg/trader, bitCatpkg/types, bitCatpkg/wrapper/liquid, token
 
 
 when isMainModule:
-  api_token.tradeSimplePolarReversal(getProduct, getChart, postOrder, getAccount, period_string="1min")
+  api_token.tradeSimplePolarReversal(getProduct, getChart, postOrder, getAccount, period_string="2sec")
 
 #[ 
 

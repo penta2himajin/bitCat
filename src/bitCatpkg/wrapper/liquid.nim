@@ -1,5 +1,5 @@
 import times, httpClient, json, sugar, strutils, jwt, tables, uri
-import ../types
+import ../types, ../library
 
 const end_point = "https://api.liquid.com"
 
@@ -146,9 +146,13 @@ proc postOrder*(api: api, order_type: string, product_id: int, side: string, qua
                 "order_type": order_type,
                 "product_id": $product_id,
                 "side": side,
-                "quantity": $quantity
+                "quantity": quantity.trunc_str 8
             }
         }
+
+    echo body
+
+    let
         client = newHttpClient(headers=api.getSignature(path))
         response = client.postContent(url=(end_point & path), body=body)
 
