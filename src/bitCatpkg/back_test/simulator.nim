@@ -1,4 +1,4 @@
-import strutils, times, strformat
+import strutils, times, strformat, sequtils
 import ../types, ../library, ../wrapper/liquid
 
 #[ Simulator with full-auto parameters ]#
@@ -433,19 +433,22 @@ when isMainModule:
     stdout.write "period: "
     let period: string = stdin.readLine
 
-    stdout.write "budget: "
-    let budget = stdin.readLine.parseFloat
+    #[ stdout.write "budget: "
+    let budget = stdin.readLine.parseFloat ]#
 
     stdout.write "data size: "
     let size = stdin.readLine.parseInt - 1
 
-    stdout.write "score threshold: "
-    let score_threshold = stdin.readLine.parseFloat
+    #[ stdout.write "score threshold: "
+    let score_threshold = stdin.readLine.parseFloat ]#
+
+    stdout.write "difference: "
+    let difference = stdin.readLine.parseInt
 
     let data = getChart(symbol, period, size)
     echo "*****************************"
 
-    let
+    #[ let
         smd_max = data.simulateSimpleMovingDifference(budget, score_threshold)
         smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
         smd_700 = data.simulateSimpleMovingDifference_arg(budget, 700)
@@ -478,6 +481,24 @@ when isMainModule:
         (mdmpr_max_score_chart, &"MDMPR (duration: {mdmpr_max.duration.int})"),
         (stpr_max_score_chart, &"STPR (threshold: {stpr_max.threshold.int})"),
         (stpr_57[1], "STPR (threshold: 57)")
+    ) ]#
+
+    let
+        duration = 60
+        horizon = newSeqFromCount[float](data.len)
+
+    var
+        ma = data.getMovingAverage duration
+    
+    for i in ma.len..<data.len - difference:
+        ma.add ((data[i..<data.len].getMovingAverage data.len - i)[0] + ma[ma.len - 1]) / 2
+
+    for i in 0..<difference:
+        ma = ma[0] & ma
+    
+    horizon.plotter("time", "price",
+        (data.close, "Chart Data"),
+        (ma, "Moving Average")
     )
 
     echo "press any key to continue..."

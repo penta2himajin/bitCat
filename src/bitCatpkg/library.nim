@@ -2,6 +2,14 @@ import httpclient, times, json, sugar, math, os, tables, gnuplot, strformat, str
 import types
 from sequtils import zip
 
+
+
+#[ type method ]#
+proc close*(chart: seq[chart]): seq[float] =
+    collect(newSeq):
+        for data in chart:
+            data.close
+
 #[ Library functions ]#
 func sum*[T](a: seq[T]): T =
     var sum: T
