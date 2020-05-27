@@ -41,4 +41,5 @@ type
         duration: int
         threshold: float
         price_threshold: float
+        difference: int
         score: int

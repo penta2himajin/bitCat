@@ -169,7 +169,7 @@ proc simulateMovingDifferentialMeanPolarReversal(data: seq[chart], budget: float
 
     max_score
 
-proc simulateSimpleThresholdPolarReversal(data: seq[chart], budget: float, score_threshold: float = 0.0): score =
+proc simulateSimpleThresholdPolarReversal*(data: seq[chart], budget: float, score_threshold: float = 0.0): score =
     var
         max_score: score
     
@@ -213,6 +213,48 @@ proc simulateSimpleThresholdPolarReversal(data: seq[chart], budget: float, score
         
         if score.float > budget * score_threshold:
             echo "threshold: ", threshold, " score: ", score
+    
+    max_score
+
+proc simulateEstimatedMovingAverage*(data: seq[chart], budget: float, score_threshold: float = 0.0): score =
+    let
+        duration = 60
+        ma = data.getMovingAverage duration
+
+    var
+        max_score: score
+
+    for diff in 0..60:
+        var
+            score = 0
+            reserve = 0.0
+            old_indicator: float
+        
+        for index in duration + diff..<data.len:
+            let
+                now_price = data[index].close
+                indicator = (ma[index - duration] + (data[duration..<index].getMovingAverage index - duration)[0]) / 2
+
+            if indicator > old_indicator:
+                if reserve == 0: # Buy Operation
+                    reserve = truncate((budget + float score) / now_price, 8)
+                    score -= int truncate(now_price * reserve, 8) - budget
+            else:
+                if reserve != 0: # Sell Operation
+                    score += int truncate(now_price * reserve, 8) - budget
+                    reserve = 0.0
+
+            old_indicator = indicator
+
+        if reserve != 0:
+            score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+
+        if score > max_score.score:
+            max_score.difference = diff
+            max_score.score = score
+
+        if score.float > budget * score_threshold:
+            echo "difference: ", diff, " score: ", score
     
     max_score
 
@@ -425,6 +467,41 @@ proc simulateSimpleThresholdPolarReversal_arg(data: seq[chart], budget: float, t
     
     (max_score, score_chart)
 
+proc simulateEstimatedMovingAverage_arg*(data: seq[chart], budget: float, difference: int, visualize: bool = false): score =
+    let
+        duration = 60
+        ma = data.getMovingAverage duration
+
+    var
+        max_score: score
+        score = 0
+        reserve = 0.0
+        old_indicator: float
+        
+    for index in duration + difference..<data.len:
+        let
+            now_price = data[index].close
+            indicator = (ma[index - duration] + (data[duration..<index].getMovingAverage index - duration)[0]) / 2
+
+        if indicator > old_indicator:
+            if reserve == 0: # Buy Operation
+                reserve = truncate((budget + float score) / now_price, 8)
+                score -= int truncate(now_price * reserve, 8) - budget
+        else:
+            if reserve != 0: # Sell Operation
+                score += int truncate(now_price * reserve, 8) - budget
+                reserve = 0.0
+
+        old_indicator = indicator
+
+    if reserve != 0:
+        score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+
+    max_score.difference = difference
+    max_score.score = score
+    
+    max_score
+
 
 when isMainModule:
     stdout.write "symbol: "
@@ -489,16 +566,32 @@ when isMainModule:
 
     var
         ma = data.getMovingAverage duration
+        normal_ma = ma
+        estimated_ma: seq[float]
+    
+    for i in 0..<data.len - ma.len:
+        normal_ma = ma[0] & normal_ma
     
     for i in ma.len..<data.len - difference:
         ma.add ((data[i..<data.len].getMovingAverage data.len - i)[0] + ma[ma.len - 1]) / 2
 
     for i in 0..<difference:
         ma = ma[0] & ma
+
+    for index in duration + difference..<data.len:
+        estimated_ma.add (ma[index - duration] + (data[duration..<index].getMovingAverage index - duration)[0]) / 2
+    
+    for i in 0..<duration + difference:
+        estimated_ma = estimated_ma[0] & estimated_ma
+    
+    echo "chart length: ", data.len
+    echo " ma length  : ", normal_ma.len
     
     horizon.plotter("time", "price",
         (data.close, "Chart Data"),
-        (ma, "Moving Average")
+        (normal_ma, "Moving Average"),
+        (ma, "Complemented Moving Average"),
+        (estimated_ma, "Estimated Moving Average")
     )
 
     echo "press any key to continue..."
