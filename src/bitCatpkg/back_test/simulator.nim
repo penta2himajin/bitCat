@@ -68,7 +68,6 @@ proc simulateThresholdMovingDifference*(data: seq[chart], budget: float, score_t
                         reserve = 0
                         buy_price = 0
 
-
                 elif difference > threshold.float:
                     if  reserve != 0:# Sell Operation
                         score += int truncate(now_price * reserve, 6) - budget
