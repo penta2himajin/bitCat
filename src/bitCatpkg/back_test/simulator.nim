@@ -442,8 +442,8 @@ when isMainModule:
     #[ stdout.write "score threshold: "
     let score_threshold = stdin.readLine.parseFloat ]#
 
-    stdout.write "difference: "
-    let difference = stdin.readLine.parseInt
+    #[ stdout.write "difference: "
+    let difference = stdin.readLine.parseInt ]#
 
     let data = getChart(symbol, period, size)
     echo "*****************************"
@@ -483,7 +483,7 @@ when isMainModule:
         (stpr_57[1], "STPR (threshold: 57)")
     ) ]#
 
-    let
+    #[ let
         duration = 60
         horizon = newSeqFromCount[float](data.len)
 
@@ -515,7 +515,33 @@ when isMainModule:
         (normal_ma, "Moving Average"),
         (ma, "Complemented Moving Average"),
         (estimated_ma, "Estimated Moving Average")
+    ) ]#
+    
+    var
+        up_count = newSeq[int](16)
+        down_count = newSeq[int](16)
+        horizon = newSeqFromCount[int](16)
+        trend = false
+        trend_index = 0
+    
+    for i in 1..<data.len:
+        if not trend and data[i - 1].close < data[i].close:
+            down_count[i - trend_index - 1] += 1
+            trend = true
+            trend_index = i
+
+        if trend and data[i - 1].close >= data[i].close:
+            up_count[i - trend_index - 1] += 1
+            trend = false
+            trend_index = i
+    
+    horizon.plotter("duration", "count",
+        (up_count, "Up"),
+        (down_count, "Down")
     )
+
+    echo " Up : ", up_count
+    echo "Down: ", down_count
 
     echo "press any key to continue..."
     discard stdin.readChar
