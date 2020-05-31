@@ -124,7 +124,7 @@ proc simulateSimpleUpDownMovingDifference*(data: seq[chart], budget: float, scor
                 max_score.score = score
             
             if score.float > budget * score_threshold:
-                echo "buy: ", buy_threshold, "sell: ", sell_threshold, " score: ", score
+                echo "buy: ", buy_threshold, " sell: ", sell_threshold, " score: ", score
     
     max_score
 
@@ -171,7 +171,7 @@ proc simulateThresholdUpDownMovingDifference*(data: seq[chart], budget: float, b
             max_score.score = score
                 
         if score.float > budget * score_threshold:
-            echo "buy: ", buy_threshold, "sell: ", sell_threshold, "price: ", price_threshold, " score: ", score
+            echo "buy: ", buy_threshold, " sell: ", sell_threshold, " price: ", price_threshold, " score: ", score
     
     max_score
 
