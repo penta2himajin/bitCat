@@ -44,6 +44,6 @@ type
         threshold: float
         buy: int
         sell: int
-        price_threshold: float
+        price: float
         difference: int
         score: int
