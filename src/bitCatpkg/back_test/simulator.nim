@@ -1,6 +1,9 @@
 import strutils, times, strformat
 import ../types, ../library, ../wrapper/liquid
 
+
+const spread = 500
+
 #[ Simulator with full-auto parameters ]#
 proc simulateSimpleMovingDifference*(data: seq[chart], budget: float, score_threshold: float = 1): score =
     let
@@ -19,8 +22,8 @@ proc simulateSimpleMovingDifference*(data: seq[chart], budget: float, score_thre
 
             if -threshold.float > difference:
                 if reserve == 0: # Buy Operation
-                    reserve = truncate((budget + float score) / (now_price + 500), 6)
-                    score -= int truncate((now_price + 500) * reserve, 6) - budget
+                    reserve = truncate((budget + float score) / (now_price + spread), 6)
+                    score -= int truncate((now_price + spread) * reserve, 6) - budget
 
             elif difference > threshold.float:
                 if  reserve != 0:# Sell Operation
@@ -58,8 +61,8 @@ proc simulateThresholdMovingDifference*(data: seq[chart], budget: float, score_t
 
                 if -threshold.float > difference:
                     if reserve == 0: # Buy Operation
-                        reserve = truncate((budget + float score) / (now_price + 500), 6)
-                        score -= int truncate((now_price + 500) * reserve, 6) - budget
+                        reserve = truncate((budget + float score) / (now_price + spread), 6)
+                        score -= int truncate((now_price + spread) * reserve, 6) - budget
                         buy_price = now_price
                 
                 elif now_price < buy_price * float price_threshold / 10000:
@@ -104,13 +107,15 @@ proc simulateSimpleMovingAverage*(data: seq[chart], budget: float, score_thresho
             
             if indicator > old_indicator:
                 if reserve == 0: # Buy Operation
-                    reserve = truncate((budget + float score) / (now_price + 500), 6)
-                    score -= int truncate((now_price + 500) * reserve, 6) - budget
+                    reserve = truncate((budget + float score) / (now_price + spread), 6)
+                    score -= int truncate((now_price + spread) * reserve, 6) - budget
             
             else:
                 if reserve != 0:
                     score += int truncate(now_price * reserve, 6) - budget
                     reserve = 0
+        
+            old_indicator = indicator
         
         if reserve != 0:
             score += int truncate(data[data.len - 1].close * reserve, 8) - budget
@@ -144,8 +149,8 @@ proc simulateSimpleMovingDifference_arg*(data: seq[chart], budget: float, thresh
 
         if -threshold.float > difference:
             if reserve == 0: # Buy Operation
-                reserve = truncate((budget + float score) / (now_price + 500), 6)
-                score -= int truncate((now_price + 500) * reserve, 8) - budget
+                reserve = truncate((budget + float score) / (now_price + spread), 6)
+                score -= int truncate((now_price + spread) * reserve, 8) - budget
                 if visualize:
                     echo "BUY : ", score + truncate(reserve * now_price, 0).int,
                         " net: ", (score + truncate(reserve * now_price, 0).int) - budget.int,
@@ -189,8 +194,8 @@ proc simulateThresholdMovingDifference_arg*(data: seq[chart], budget: float, thr
 
         if -threshold.float > difference:
             if reserve == 0: # Buy Operation
-                reserve = truncate((budget + float score) / (now_price + 500), 6)
-                score -= int truncate((now_price + 500) * reserve, 6) - budget
+                reserve = truncate((budget + float score) / (now_price + spread), 6)
+                score -= int truncate((now_price + spread) * reserve, 6) - budget
                 buy_price = now_price
                 
         elif now_price < buy_price * float price_threshold:
@@ -236,8 +241,8 @@ proc simulateSimpleMovingAverage_arg*(data: seq[chart], budget: float, duration:
             
         if indicator > old_indicator:
             if reserve == 0: # Buy Operation
-                reserve = truncate((budget + float score) / (now_price + 500), 6)
-                score -= int truncate((now_price + 500) * reserve, 6) - budget
+                reserve = truncate((budget + float score) / (now_price + spread), 6)
+                score -= int truncate((now_price + spread) * reserve, 6) - budget
             
         else:
             if reserve != 0:
@@ -248,6 +253,8 @@ proc simulateSimpleMovingAverage_arg*(data: seq[chart], budget: float, duration:
             score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
         else:
             score_chart.add score.float * 100 / budget
+        
+        old_indicator = indicator
         
     if reserve != 0:
         score += int truncate(data[data.len - 1].close * reserve, 8) - budget
@@ -277,23 +284,21 @@ when isMainModule:
 
     let
         smd_max = data.simulateSimpleMovingDifference budget
-        smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
         tmd_max = data.simulateThresholdMovingDifference budget
-        tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price_threshold)[1]
         sma_max = data.simulateSimpleMovingAverage budget
-        sma_max_score_chart = data.simulateSimpleMovingAverage_arg(budget, sma_max.duration)[1]
-        sma_450 = data.simulateSimpleMovingAverage_arg(budget, 450)[1]
         horizon = newSeqFromCount[float](data.len)
 
     echo "SMD max: ", smd_max
     echo "TMD max: ", tmd_max
     echo "SMA max: ", sma_max
 
+    let
+        smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
+        tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price_threshold)[1]
+
     horizon.plotter("", "",
         (smd_max_score_chart, &"SMD (threshold: {smd_max.threshold.int})"),
-        (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price_threshold.truncate(4) * 100}%)"),
-        (sma_max_score_chart, &"SMA (duration : {sma_max.duration.int})"),
-        (sma_450, "SMA (duration : 450)")
+        (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price_threshold.truncate(4) * 100}%)")
     )
 
     #[ let
