@@ -129,6 +129,44 @@ proc simulateSimpleMovingAverage*(data: seq[chart], budget: float, score_thresho
     
     max_score
 
+proc simulateSimpleUpDownMovingDifference*(data: seq[chart], budget: float, score_threshold: float = 1): score =
+    let differences = data.getDifference
+    var max_score: score
+
+    for sell_threshold in countup(0, 10000, 50):
+        for buy_threshold in countup(0, 10000, 50):
+            var
+                score = 0
+                reserve = 0.0
+            
+            for index in 0..<differences.len:
+                let
+                    now_price = data[index + 1].close
+                    difference = differences[index]
+                
+                if -buy_threshold.float > difference:
+                    if reserve == 0: # Buy Operation
+                        reserve = truncate((budget + float score) / (now_price + spread), 6)
+                        score -= int truncate((now_price + spread) * reserve, 6) - budget
+                
+                elif difference > sell_threshold.float:
+                    if  reserve != 0:# Sell Operation
+                        score += int truncate(now_price * reserve, 6) - budget
+                        reserve = 0
+            
+            if reserve != 0:
+                score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+            
+            if score > max_score.score:
+                max_score.buy = buy_threshold
+                max_score.sell = sell_threshold
+                max_score.score = score
+            
+            if score.float > budget * score_threshold:
+                echo "buy: ", buy_threshold, "sell: ", sell_threshold, " score: ", score
+    
+    max_score
+
 #[ Simulator with Argument parameters ]#
 proc simulateSimpleMovingDifference_arg*(data: seq[chart], budget: float, threshold: int, visualize: bool = false): (score, seq[float]) =
     let
@@ -265,6 +303,44 @@ proc simulateSimpleMovingAverage_arg*(data: seq[chart], budget: float, duration:
     
     (max_score, score_chart)
 
+proc simulateSimpleUpDownMovingDifference_arg*(data: seq[chart], budget: float, buy: int, sell: int, visualize = false): (score, seq[float]) =
+    let differences = data.getDifference
+    var
+        max_score: score
+        score_chart = newSeq[float]()
+        score = 0
+        reserve = 0.0
+            
+    for index in 0..<differences.len:
+        let
+            now_price = data[index + 1].close
+            difference = differences[index]
+                
+        if -buy.float > difference:
+            if reserve == 0: # Buy Operation
+                reserve = truncate((budget + float score) / (now_price + spread), 6)
+                score -= int truncate((now_price + spread) * reserve, 6) - budget
+                
+        elif difference > sell.float:
+            if  reserve != 0:# Sell Operation
+                score += int truncate(now_price * reserve, 6) - budget
+                reserve = 0
+        
+        if reserve != 0:
+            score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
+        else:
+            score_chart.add score.float * 100 / budget
+            
+    if reserve != 0:
+        score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+
+    max_score.buy = buy
+    max_score.sell = sell
+    max_score.score = score
+    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
+    
+    (max_score, score_chart)
+
 
 when isMainModule:
     stdout.write "symbol: "
@@ -286,6 +362,7 @@ when isMainModule:
         smd_max = data.simulateSimpleMovingDifference budget
         tmd_max = data.simulateThresholdMovingDifference budget
         sma_max = data.simulateSimpleMovingAverage budget
+        sudmd_max = data.simulateSimpleUpDownMovingDifference budget
         horizon = newSeqFromCount[float](data.len)
 
     echo "SMD max: ", smd_max
@@ -295,10 +372,12 @@ when isMainModule:
     let
         smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
         tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price_threshold)[1]
+        sudmd_max_score_chart = data.simulateSimpleUpDownMovingDifference_arg(budget, sudmd_max.buy, sudmd_max.sell)[1]
 
     horizon.plotter("", "",
         (smd_max_score_chart, &"SMD (threshold: {smd_max.threshold.int})"),
-        (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price_threshold.truncate(4) * 100}%)")
+        (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price_threshold.truncate(4) * 100}%)"),
+        (sudmd_max_score_chart, &"SUDMD (Buy: {sudmd_max.buy}, Sell: {sudmd_max.sell})")
     )
 
     #[ let

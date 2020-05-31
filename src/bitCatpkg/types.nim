@@ -40,6 +40,8 @@ type
     score* = tuple
         duration: int
         threshold: float
+        buy: int
+        sell: int
         price_threshold: float
         difference: int
         score: int
