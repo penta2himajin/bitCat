@@ -34,7 +34,9 @@ type
         bids: seq[order]
         asks: seq[order]
     
-    account* = Table[string, float]
+    account* = Table[
+        string,
+        float]
 
     # Simulator types
     score* = tuple

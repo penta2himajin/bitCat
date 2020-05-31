@@ -303,7 +303,7 @@ proc simulateSimpleMovingAverage_arg*(data: seq[chart], budget: float, duration:
     
     (max_score, score_chart)
 
-proc simulateSimpleUpDownMovingDifference_arg*(data: seq[chart], budget: float, buy: int, sell: int, visualize = false): (score, seq[float]) =
+proc simulateSimpleUpDownMovingDifference_arg*(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int, visualize = false): (score, seq[float]) =
     let differences = data.getDifference
     var
         max_score: score
@@ -316,12 +316,12 @@ proc simulateSimpleUpDownMovingDifference_arg*(data: seq[chart], budget: float, 
             now_price = data[index + 1].close
             difference = differences[index]
                 
-        if -buy.float > difference:
+        if -buy_threshold.float > difference:
             if reserve == 0: # Buy Operation
                 reserve = truncate((budget + float score) / (now_price + spread), 6)
                 score -= int truncate((now_price + spread) * reserve, 6) - budget
                 
-        elif difference > sell.float:
+        elif difference > sell_threshold.float:
             if  reserve != 0:# Sell Operation
                 score += int truncate(now_price * reserve, 6) - budget
                 reserve = 0
@@ -334,8 +334,8 @@ proc simulateSimpleUpDownMovingDifference_arg*(data: seq[chart], budget: float, 
     if reserve != 0:
         score += int truncate(data[data.len - 1].close * reserve, 8) - budget
 
-    max_score.buy = buy
-    max_score.sell = sell
+    max_score.buy = buy_threshold
+    max_score.sell = sell_threshold
     max_score.score = score
     score_chart = newSeq[float](data.len - score_chart.len) & score_chart
     
@@ -365,9 +365,10 @@ when isMainModule:
         sudmd_max = data.simulateSimpleUpDownMovingDifference budget
         horizon = newSeqFromCount[float](data.len)
 
-    echo "SMD max: ", smd_max
-    echo "TMD max: ", tmd_max
-    echo "SMA max: ", sma_max
+    echo " SMD  max: ", smd_max
+    echo " TMD  max: ", tmd_max
+    echo " SMA  max: ", sma_max
+    echo "SUDMD max: ", sudmd_max
 
     let
         smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
@@ -379,66 +380,6 @@ when isMainModule:
         (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price_threshold.truncate(4) * 100}%)"),
         (sudmd_max_score_chart, &"SUDMD (Buy: {sudmd_max.buy}, Sell: {sudmd_max.sell})")
     )
-
-    #[ let
-        duration = 60
-        horizon = newSeqFromCount[float](data.len)
-
-    var
-        ma = data.getMovingAverage duration
-        normal_ma = ma
-        estimated_ma: seq[float]
-    
-    for i in 0..<data.len - ma.len:
-        normal_ma = ma[0] & normal_ma
-    
-    for i in ma.len..<data.len - difference:
-        ma.add ((data[i..<data.len].getMovingAverage data.len - i)[0] + ma[ma.len - 1]) / 2
-
-    for i in 0..<difference:
-        ma = ma[0] & ma
-
-    for index in duration + difference..<data.len:
-        estimated_ma.add (ma[index - duration] + (data[duration..<index].getMovingAverage index - duration)[0]) / 2
-    
-    for i in 0..<duration + difference:
-        estimated_ma = estimated_ma[0] & estimated_ma
-    
-    echo "chart length: ", data.len
-    echo " ma length  : ", normal_ma.len
-    
-    horizon.plotter("time", "price",
-        (data.close, "Chart Data"),
-        (normal_ma, "Moving Average"),
-        (ma, "Complemented Moving Average"),
-        (estimated_ma, "Estimated Moving Average")
-    ) ]#
-    
-    #[ var
-        up_count = newSeq[int](16)
-        down_count = newSeq[int](16)
-        horizon = newSeqFromCount[int](16)
-        trend = false
-        trend_index = 0
-    
-    for i in 1..<data.len:
-        if not trend and data[i - 1].close < data[i].close:
-            down_count[i - trend_index - 1] += 1
-            trend = true
-            trend_index = i
-
-        if trend and data[i - 1].close >= data[i].close:
-            up_count[i - trend_index - 1] += 1
-            trend = false
-            trend_index = i
-    
-    horizon.plotter("duration", "count",
-        (up_count, "Up"),
-        (down_count, "Down")
-    )
-
-    echo " Up : ", up_count
-    echo "Down: ", down_count ]#
 
     echo "press any key to continue..."
     discard stdin.readChar
