@@ -147,7 +147,7 @@ proc simulateThresholdUpDownMovingDifference*(data: seq[chart], budget: float, b
                 if reserve == 0: # Buy Operation
                     reserve = truncate((budget + float score) / (now_price + spread), 6)
                     score -= int truncate((now_price + spread) * reserve, 6) - budget
-                    buy_price = now_price
+                    buy_price = now_price + spread
                     
             elif now_price < buy_price * float price_threshold / 10000:
                 if reserve != 0:
