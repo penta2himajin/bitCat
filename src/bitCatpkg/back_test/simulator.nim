@@ -132,7 +132,7 @@ proc simulateThresholdUpDownMovingDifference*(data: seq[chart], budget: float, b
     let differences = data.getDifference
     var max_score: score
 
-    for price_threshold in countup(9000, 10000, 50):
+    for price_threshold in countup(9500, 10000, 50):
         var
             score = 0
             reserve = 0.0
@@ -472,12 +472,16 @@ when isMainModule:
         tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price)[1]
         sudmd_max_score_chart = data.simulateSimpleUpDownMovingDifference_arg(budget, sudmd_max.buy, sudmd_max.sell)[1]
         tudmd_max_score_chart = data.simulateThresholdUpDownMovingDifference_arg(budget, tudmd_max.buy, tudmd_max.sell, tudmd_max.price)[1]
+        sudmd_2900_3700 = data.simulateSimpleUpDownMovingDifference_arg(budget, 2900, 3700)[1]
+        tudmd_2900_3700_098 = data.simulateThresholdUpDownMovingDifference_arg(budget, 2900, 3700, 0.95)[1]
 
     horizon.plotter("", "",
         (smd_max_score_chart, &"SMD (threshold: {smd_max.threshold.int})"),
         (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price.truncate(4) * 100}%)"),
         (sudmd_max_score_chart, &"SUDMD (Buy: {sudmd_max.buy}, Sell: {sudmd_max.sell})"),
-        (tudmd_max_score_chart, &"TUDMD (Buy: {tudmd_max.buy}, Sell: {tudmd_max.sell}, Price: {tudmd_max.price.truncate(4) * 100}%)")
+        (tudmd_max_score_chart, &"TUDMD (Buy: {tudmd_max.buy}, Sell: {tudmd_max.sell}, Price: {tudmd_max.price.truncate(4) * 100}%)"),
+        (sudmd_2900_3700, &"SUDMD (Buy: 2900, Sell: 3700)"),
+        (tudmd_2900_3700_098, &"TUDMD (Buy: 2900, Sell: 3700, Price: 0.95)")
     )
 
     echo "press any key to continue..."
