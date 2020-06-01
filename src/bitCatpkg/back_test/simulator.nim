@@ -481,7 +481,7 @@ when isMainModule:
         (sudmd_max_score_chart, &"SUDMD (Buy: {sudmd_max.buy}, Sell: {sudmd_max.sell})"),
         (tudmd_max_score_chart, &"TUDMD (Buy: {tudmd_max.buy}, Sell: {tudmd_max.sell}, Price: {tudmd_max.price.truncate(4) * 100}%)"),
         (sudmd_2900_3700, &"SUDMD (Buy: 2900, Sell: 3700)"),
-        (tudmd_2900_3700_098, &"TUDMD (Buy: 2900, Sell: 3700, Price: 0.95)")
+        (tudmd_2900_3700_098, &"TUDMD (Buy: 2900, Sell: 3700, Price: 95%)")
     )
 
     echo "press any key to continue..."
