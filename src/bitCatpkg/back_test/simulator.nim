@@ -628,7 +628,7 @@ when isMainModule:
                 sum[float](differences[i..i + diff - 1])
         estimated_diff_sums = collect(newSeq):
             for i in 0..differences.len - diff:
-                sum[float](differences[i + 1..i + diff - 1])
+                sum[float](differences[i..i + diff - 1])
     
     diff_sums = newSeq[float](data.len - diff_sums.len - 1) & diff_sums & @[differences[differences.len - diff + 1..differences.len - 1].sum]
     estimated_diff_sums = newSeq[float](data.len - estimated_diff_sums.len) & estimated_diff_sums
