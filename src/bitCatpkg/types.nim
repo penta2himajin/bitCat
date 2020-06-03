@@ -36,7 +36,8 @@ type
     
     account* = Table[
         string,
-        float]
+        float
+    ]
 
     # Simulator types
     score* = tuple
@@ -45,5 +46,4 @@ type
         buy: int
         sell: int
         price: float
-        difference: int
         score: int
