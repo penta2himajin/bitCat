@@ -736,10 +736,14 @@ when isMainModule:
                 sum[float](differences[i..i + diff - 1])
         diff_average = collect(newSeq):
             for i in 0..differences.len - diff:
+<<<<<<< HEAD
                 average[float](differences[i..i + diff - 1])
         diff_test = collect(newSeq):
             for i in 0..<differences.len:
                 differences[i] / data[i + 1].close * 100
+=======
+                sum[float](differences[i..i + diff - 1])
+>>>>>>> 657704ae35392a9bff1a0ef3683cd1ce86924f5b
     
     diff_sums = newSeq[float](data.len - diff_sums.len) & diff_sums
     diff_average = newSeq[float](data.len - diff_average.len) & diff_average
