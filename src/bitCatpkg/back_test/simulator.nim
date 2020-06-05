@@ -1,4 +1,4 @@
-import strutils, times, strformat, sugar
+import strutils, times, strformat, sugar, math
 import ../types, ../library, ../wrapper/liquid
 
 
@@ -664,6 +664,93 @@ proc simulateSimpleMovingAverage_arg*(data: seq[chart], budget: float, duration:
     
     (max_score, score_chart)
 
+proc simulatePartialProbabilityTrade_arg*(data: seq[chart], budget: float, score_threshold: float = 1): (score, seq[float]) =
+    var
+        max_score: score
+        score_chart = newSeq[float]()
+        
+        old_price = data[0].close
+        trend: bool
+        trend_index: int
+        
+        score = int budget
+        reserve = 0.0
+    
+
+    for i in 1..<data.len:
+        let now_price = data[i].close
+        
+        echo "index: ", i, 
+            " trend: ", trend,
+            " trend_index: ", trend_index,
+            " score: ", score,
+            " reserve: ", reserve,
+            " time: ", data[i].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
+        
+        if now_price < old_price:
+            if trend:
+                #[ let buy = truncate(score.float * (round(1/8 * 1000) / 1000.0) / (now_price + spread), 8)
+                reserve += truncate(score.float * (round(1/8 * 1000) / 1000.0) / (now_price + spread), 8)
+                score -= int truncate((now_price + spread) * buy, 8) ]#
+
+                trend = false
+                trend_index = 0
+            
+            else:
+                if trend_index == 3:
+                    let buy = truncate(score.float * (round(1/8 * 1000) / 1000.0) / (now_price + spread), 8)
+                    reserve += truncate(score.float * (round(1/8 * 1000) / 1000.0) / (now_price + spread), 8)
+                    score -= int truncate((now_price + spread) * buy, 8)
+
+                if trend_index == 4:
+                    let buy = truncate(score.float * (round(2/7 * 1000) / 1000) / (now_price + spread), 8)
+                    reserve += truncate(score.float * (round(2/7 * 1000) / 1000) / (now_price + spread), 8)
+                    score -= int truncate((now_price + spread) * buy, 8)
+                
+                elif trend_index == 5:
+                    let buy = truncate(score.float / (now_price + spread), 8)
+                    reserve += truncate(score.float / (now_price + spread), 8)
+                    score -= int truncate((now_price + spread) * buy, 8)
+
+                trend_index += 1
+        
+        elif now_price > old_price:
+            if not trend:
+                if reserve != 0: # Sell Operation
+                    score += int truncate(now_price * reserve * (round(1/8 * 1000) / 1000), 8)
+                    reserve -= truncate(reserve * (round(1/8 * 1000) / 1000), 8)
+                
+                trend = true
+                trend_index = 0
+            
+            else:
+                if trend_index == 0:
+                    if reserve != 0: # Sell Operation
+                        score += int truncate(now_price * reserve * (round(2/7 * 1000) / 1000), 8)
+                        reserve -= truncate(reserve * (round(2/7 * 1000) / 1000), 8)
+                
+                if trend_index == 1:
+                    if reserve != 0: # Sell Operation
+                        score += int truncate(now_price * reserve, 8)
+                        reserve = 0
+
+                trend_index += 1
+        
+        old_price = now_price
+        
+        if reserve != 0:
+            score_chart.add (truncate(now_price * reserve, 8) + score.float - budget) / budget * 100
+        else:
+            score_chart.add (score.float - budget) * 100 / budget
+        
+    if reserve != 0:
+        score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+
+    max_score.score = score
+    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
+
+    (max_score, score_chart)
+
 
 when isMainModule:
     stdout.write "symbol: "
@@ -672,59 +759,63 @@ when isMainModule:
     stdout.write "period: "
     let period: string = stdin.readLine
 
-    #[ stdout.write "budget: "
-    let budget = stdin.readLine.parseFloat ]#
+    stdout.write "budget: "
+    let budget = stdin.readLine.parseFloat
 
     stdout.write "data size: "
     let size = stdin.readLine.parseInt - 1
 
-    stdout.write "difference: "
-    let diff = stdin.readLine.parseInt
+    #[ stdout.write "difference: "
+    let diff = stdin.readLine.parseInt ]#
 
     let data = getChart(symbol, period, size)
     echo "*****************************"
 
-    #[ let
+    let
         data_close = collect(newSeq):
             for d in data:
                 (d.close / data[0].close - 1) * 100
         #smd_max = data.simulateSimpleMovingDifference budget
-        tmd_max = data.simulateThresholdMovingDifference budget
-        sudmd_max = data.simulateSimpleUpDownMovingDifference budget
-        tudmd_max = data.simulateThresholdUpDownMovingDifference(budget, sudmd_max.buy, sudmd_max.sell)
-        sma_max = data.simulateSimpleMovingAverage budget
-        smr_max = data.simulateSimpleMovingReversal budget
-        mr_max = data.simulateMovingReversal budget
+        #tmd_max = data.simulateThresholdMovingDifference budget
+        #sudmd_max = data.simulateSimpleUpDownMovingDifference budget
+        #tudmd_max = data.simulateThresholdUpDownMovingDifference(budget, sudmd_max.buy, sudmd_max.sell)
+        #sma_max = data.simulateSimpleMovingAverage budget
+        #smr_max = data.simulateSimpleMovingReversal budget
+        #mr_max = data.simulateMovingReversal budget
+        ppt = data.simulatePartialProbabilityTrade_arg(budget)
         horizon = newSeqFromCount[float](data.len)
 
     #echo " SMD  max: ", smd_max
-    echo " TMD  max: ", tmd_max
+    #echo " TMD  max: ", tmd_max
     #echo "SUDMD max: ", sudmd_max
-    echo "TUDMD max: ", tudmd_max
-    echo " SMA  max: ", sma_max
-    echo "  MR  max: ", mr_max
+    #echo "TUDMD max: ", tudmd_max
+    #echo " SMA  max: ", sma_max
+    #echo "  MR  max: ", mr_max
+    echo "   PPT max: ", ppt[0]
 
     let
         #smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
-        tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price)[1]
+        #tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price)[1]
         #sudmd_max_score_chart = data.simulateSimpleUpDownMovingDifference_arg(budget, sudmd_max.buy, sudmd_max.sell)[1]
-        tudmd_max_score_chart = data.simulateThresholdUpDownMovingDifference_arg(budget, tudmd_max.buy, tudmd_max.sell, tudmd_max.price)[1]
-        tudmd_2900_3700_098 = data.simulateThresholdUpDownMovingDifference_arg(budget, 2900, 3700, 0.95)[1]
-        smr_max_score_chart = data.simulateSimpleMovingReversal_arg(budget, smr_max.threshold)[1]
-        mr_max_score_chart = data.simulateMovingReversal_arg(budget, mr_max.buy, mr_max.sell, mr_max.threshold)[1]
+        #tudmd_max_score_chart = data.simulateThresholdUpDownMovingDifference_arg(budget, tudmd_max.buy, tudmd_max.sell, tudmd_max.price)[1]
+        #tudmd_2900_3700_098 = data.simulateThresholdUpDownMovingDifference_arg(budget, 2900, 3700, 0.95)[1]
+        #smr_max_score_chart = data.simulateSimpleMovingReversal_arg(budget, smr_max.threshold)[1]
+        #mr_max_score_chart = data.simulateMovingReversal_arg(budget, mr_max.buy, mr_max.sell, mr_max.threshold)[1]
+        ppt_score_chart = ppt[1]
 
     horizon.plotter("", "",
         (data_close, "close"),
         #(smd_max_score_chart, &"SMD (threshold: {smd_max.threshold.int})"),
-        (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price.truncate(4) * 100}%)"),
+        #(tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price.truncate(4) * 100}%)"),
         #(sudmd_max_score_chart, &"SUDMD (Buy: {sudmd_max.buy}, Sell: {sudmd_max.sell})"),
-        (tudmd_max_score_chart, &"TUDMD (Buy: {tudmd_max.buy}, Sell: {tudmd_max.sell}, Price: {tudmd_max.price.truncate(4) * 100}%)"),
-        (tudmd_2900_3700_098, &"TUDMD (Buy: 2900, Sell: 3700, Price: 95%)"),
-        (smr_max_score_chart, &"SMR (Reverse: {smr_max.threshold * 100}%)"),
-        (mr_max_score_chart, &"MR (Buy: {mr_max.buy}, Sell: {mr_max.sell}, Reverse: {int mr_max.threshold * 100}%)"),
-    ) ]#
+        #(tudmd_max_score_chart, &"TUDMD (Buy: {tudmd_max.buy}, Sell: {tudmd_max.sell}, Price: {tudmd_max.price.truncate(4) * 100}%)"),
+        #(tudmd_2900_3700_098, &"TUDMD (Buy: 2900, Sell: 3700, Price: 95%)"),
+        #(smr_max_score_chart, &"SMR (Reverse: {smr_max.threshold * 100}%)"),
+        #(mr_max_score_chart, &"MR (Buy: {mr_max.buy}, Sell: {mr_max.sell}, Reverse: {int mr_max.threshold * 100}%)"),
+        (ppt_score_chart, "PPT"),
+    )
 
-    let
+    #[ let
         data_close = collect(newSeq):
             for d in data:
                 (d.close / data[0].close - 1) * 100
@@ -750,7 +841,7 @@ when isMainModule:
         #(diff_sums, &"difference sum"),
         #(diff_average, "difference average"),
         (diff_test, "diff test") 
-    )
+    ) ]#
 
     echo "press any key to continue..."
     discard stdin.readChar
