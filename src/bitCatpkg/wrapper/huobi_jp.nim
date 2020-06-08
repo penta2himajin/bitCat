@@ -69,13 +69,11 @@ proc getSignature(api: api, http_method: string, path: string, arguments: openAr
 
 proc getAccount*(api: api): account =
     let
-        id_entry_point = end_point & "/v1/account/accounts" & api.getSignature("GET", "/v1/account/accounts")
-        id = newHttpClient().getContent(id_entry_point).parseJson["data"][0]["id"].getInt
-
+        id = newHttpClient().getContent(end_point & "/v1/account/accounts" & api.getSignature("GET", "/v1/account/accounts")).parseJson["data"][0]["id"].getInt
         path = "/v1/account/accounts/" & $id & "/balance"
-        account_entry_point = end_point & path & api.getSignature("GET", path)
+        entry_point = end_point & path & api.getSignature("GET", path)
         client = newHttpClient()
-        accounts_json = client.getContent(account_entry_point).parseJson
+        accounts_json = client.getContent(entry_point).parseJson
         accounts = collect(newSeq):
             for account_json in accounts_json["data"]["list"]:
                 if account_json["type"].getStr == "trade":
