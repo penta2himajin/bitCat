@@ -1,12 +1,4 @@
-#[
-
-    *** NOTE ***
-    This module has been abandoned for development.
-    Please use it after making your own changes.
-
-]#
-
-import httpclient, json, sugar, times, algorithm, uri, strutils, hmac, base64
+import httpclient, json, sugar, times, algorithm, uri, strutils, hmac, base64, uri, tables
 import ../types
 
 
@@ -65,7 +57,7 @@ proc getSignature(api: api, http_method: string, path: string, arguments: openAr
         query: seq[(string, string)] = @{
             "AccessKeyId": api.key,
             "SignatureMethod": "HmacSHA256",
-            "SignatureVersion": $2,
+            "SignatureVersion": "2",
             "Timestamp": now().utc().format("yyyy-MM-dd HH:mm:ss").replace(" ", "T")
         }
     
@@ -73,13 +65,29 @@ proc getSignature(api: api, http_method: string, path: string, arguments: openAr
         query.add(argument)
     
     query.sort()
-    "?" & query.encodeQuery & "&Signature=" & hmac_sha256(key=api.secret, data=http_method ~ end_point ~ path ~ query.encodeQuery).encode
+    "?" & query.encodeQuery & "&Signature=" & hmac_sha256(key=api.secret, data=http_method ~ "api-cloud.huobi.co.jp" ~ path ~ query.encodeQuery).encode.encodeUrl
 
-proc getAccount*(api: api) =
+proc getAccount*(api: api): account =
     let
-        path = "/v1/account/accounts"
+        id_entry_point = end_point & "/v1/account/accounts" & api.getSignature("GET", "/v1/account/accounts")
+        id = newHttpClient().getContent(id_entry_point).parseJson["data"][0]["id"].getInt
+
+        path = "/v1/account/accounts/" & $id & "/balance"
+        account_entry_point = end_point & path & api.getSignature("GET", path)
         client = newHttpClient()
-        url = end_point & path & api.getSignature("GET", path)
-        account_json = client.getContent(url).parseJson
-    echo url
-    echo account_json
+        accounts_json = client.getContent(account_entry_point).parseJson
+        accounts = collect(newSeq):
+            for account_json in accounts_json["data"]["list"]:
+                if account_json["type"].getStr == "trade":
+                    (
+                        currency: account_json["currency"].getStr.toUpper,
+                        amount: account_json["balance"].getStr.parseFloat
+                    )
+
+    accounts.toTable
+
+
+when isMainModule:
+    from ../../token import huobi_token
+
+    echo huobi_token.getAccount
