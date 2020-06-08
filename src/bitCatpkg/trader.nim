@@ -42,7 +42,7 @@ proc tradeSimpleMovingDifference*(api: api, product: proc, chart: proc, order: p
             if reserve == 0: # Buy Operation
                 echo "\n*** BUY OPERATION ***"
                 try:
-                    echo api.order("market", 5, "buy", truncate(fiat / product.ask - 0.00002, 8))
+                    echo api.order("market", "btcjpy", "buy", truncate(fiat / product.ask - 0.00002, 8))
                 except HttpRequestError:
                     echo "Operation Failed."
                 finally: discard
@@ -51,7 +51,7 @@ proc tradeSimpleMovingDifference*(api: api, product: proc, chart: proc, order: p
             if  reserve != 0:# Sell Operation
                 echo "\n### SELL OPERATION ###"
                 try:
-                    echo api.order("market", 5, "sell", reserve)
+                    echo api.order("market", "btcjpy", "sell", reserve)
                 except HttpRequestError:
                     echo "Operation Failed."
                 finally: discard
@@ -108,7 +108,7 @@ proc tradeMovingDifferentialMeanPolarReversal*(api: api, product: proc, chart: p
                 if reserve == 0:
                     echo "\n*** BUY OPERATION ***"
                     try:
-                        echo api.order("market", 5, "buy", truncate(fiat / product.ask - 0.00002, 8))
+                        echo api.order("market", "btcjpy", "buy", truncate(fiat / product.ask - 0.00002, 8))
                     except HttpRequestError:
                         echo "Operation Failed."
                     finally: discard
@@ -119,7 +119,7 @@ proc tradeMovingDifferentialMeanPolarReversal*(api: api, product: proc, chart: p
                 if reserve != 0:
                     echo "\n### SELL OPERATION ###"
                     try:
-                        echo api.order("market", 5, "sell", reserve)
+                        echo api.order("market", "btcjpy", "sell", reserve)
                     except HttpRequestError:
                         echo "Operation Failed."
                     finally: discard
@@ -174,7 +174,7 @@ proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, or
                 if reserve == 0: # Buy Operation
                     echo "\n*** BUY OPERATION ***"
                     try:
-                        echo api.order("market", 5, "buy", truncate(fiat / product.ask - 0.00002, 8))
+                        echo api.order("market", "btcjpy", "buy", truncate(fiat / product.ask - 0.00002, 8))
                     except HttpRequestError:
                         echo "Operation Failed."
                     finally: discard
@@ -189,7 +189,7 @@ proc tradeSimpleThresholdPolarReversal*(api: api, product: proc, chart: proc, or
                 if reserve != 0: # Sell Operation
                     echo "\n### SELL OPERATION ###"
                     try:
-                        echo api.order("market", 5, "sell", reserve)
+                        echo api.order("market", "btcjpy", "sell", reserve)
                     except HttpRequestError:
                         echo "Operation Failed."
                     finally: discard
@@ -250,7 +250,7 @@ proc tradeSimplePolarReversal*(api: api, product: proc, chart: proc, order: proc
                 if reserve < 0.001: # Buy Operation
                     echo "\n*** BUY OPERATION ***"
                     try:
-                        echo api.order("market", 5, "buy", fiat / product.ask - 0.00002)
+                        echo api.order("market", "btcjpy", "buy", fiat / product.ask - 0.00002)
                     except HttpRequestError:
                         echo "Operation Failed."
                     finally: discard
@@ -258,7 +258,7 @@ proc tradeSimplePolarReversal*(api: api, product: proc, chart: proc, order: proc
                 if reserve > 0.001:
                     echo "\n### SELL OPERATION ###"
                     try:
-                        echo api.order("market", 5, "sell", reserve)
+                        echo api.order("market", "btcjpy", "sell", reserve)
                     except HttpRequestError:
                         echo "Operation Failed."
                     finally: discard
@@ -272,7 +272,7 @@ proc tradeSimplePolarReversal*(api: api, product: proc, chart: proc, order: proc
                 if reserve > 0.001: # Sell Operation
                     echo "\n### SELL OPERATION ###"
                     try:
-                        echo api.order("market", 5, "sell", reserve)
+                        echo api.order("market", "btcjpy", "sell", reserve)
                     except HttpRequestError:
                         echo "Operation Failed."
                     finally: discard

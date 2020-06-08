@@ -84,8 +84,29 @@ proc getAccount*(api: api): account =
 
     accounts.toTable
 
+proc postOrder*(api: api, order_type: string, product_pair: string, side: string, quantity: float): string =
+    let
+        id = newHttpClient().getContent(end_point & "/v1/account/accounts" & api.getSignature("GET", "/v1/account/accounts")).parseJson["data"][0]["id"].getInt
+        path = "/v1/order/orders/place"
+        body = $ %* {
+            "account-id": $id,
+            "amount": $quantity,
+            "symbol": product_pair,
+            "type": side & "-" & order_type
+        }
+    
+    echo body
+
+    let
+        entry_point = end_point & path & api.getSignature("POST", path)
+        client = newHttpClient()
+        response = client.postContent(url=entry_point, body=body)
+    
+    response
+
 
 when isMainModule:
     from ../../token import huobi_token
 
     echo huobi_token.getAccount
+    echo huobi_token.postOrder("market", "btcjpy", "buy", 0.001)

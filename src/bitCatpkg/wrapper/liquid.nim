@@ -138,13 +138,13 @@ proc getAccount*(api: api): Table[string, float] =
     
     accounts.toTable()
 
-proc postOrder*(api: api, order_type: string, product_id: int, side: string, quantity: float): string =
+proc postOrder*(api: api, order_type: string, product_pair: string, side: string, quantity: float): string =
     let
         path = "/orders/"
         body = $ %*{
             "order": {
                 "order_type": order_type,
-                "product_id": $product_id,
+                "product_id": $getProduct(product_pair).id,
                 "side": side,
                 "quantity": quantity.trunc_str 8
             }
@@ -157,3 +157,7 @@ proc postOrder*(api: api, order_type: string, product_id: int, side: string, qua
         response = client.postContent(url=(end_point & path), body=body)
 
     response
+
+
+when isMainModule:
+    echo getProduct("btcjpy").id
