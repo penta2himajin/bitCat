@@ -689,7 +689,7 @@ when isMainModule:
         #tudmd_max = data.simulateThresholdUpDownMovingDifference(budget, sudmd_max.buy, sudmd_max.sell)
         #sma_max = data.simulateSimpleMovingAverage budget
         #mr_max = data.simulateThresholdMovingReversal budget
-        mae_max = data.simulateMovingAverageEstimate(budget, 0.01)
+        mae_max = data.simulateMovingAverageEstimate budget
         horizon = newSeqFromCount[float](data.len)
 
     #echo " SMD  max: ", smd_max
