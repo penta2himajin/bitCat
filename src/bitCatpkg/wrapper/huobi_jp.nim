@@ -67,9 +67,18 @@ proc getSignature(api: api, http_method: string, path: string, arguments: openAr
     query.sort()
     "?" & query.encodeQuery & "&Signature=" & hmac_sha256(key=api.secret, data=http_method ~ "api-cloud.huobi.co.jp" ~ path ~ query.encodeQuery).encode.encodeUrl
 
+proc getID(api: api): int =
+    newHttpClient()
+        .getContent(
+            end_point & "/v1/account/accounts" & api.getSignature(
+                "GET",
+                "/v1/account/accounts"))
+        .parseJson["data"][0]["id"]
+        .getInt
+
 proc getAccount*(api: api): account =
     let
-        id = newHttpClient().getContent(end_point & "/v1/account/accounts" & api.getSignature("GET", "/v1/account/accounts")).parseJson["data"][0]["id"].getInt
+        id = api.getID
         path = "/v1/account/accounts/" & $id & "/balance"
         entry_point = end_point & path & api.getSignature("GET", path)
         client = newHttpClient()
@@ -86,7 +95,7 @@ proc getAccount*(api: api): account =
 
 proc postOrder*(api: api, order_type: string, product_pair: string, side: string, quantity: float): string =
     let
-        id = newHttpClient().getContent(end_point & "/v1/account/accounts" & api.getSignature("GET", "/v1/account/accounts")).parseJson["data"][0]["id"].getInt
+        id = api.getID
         path = "/v1/order/orders/place"
         body = $ %* {
             "account-id": $id,
@@ -94,7 +103,7 @@ proc postOrder*(api: api, order_type: string, product_pair: string, side: string
             "symbol": product_pair,
             "type": side & "-" & order_type
         }
-    
+
     echo body
 
     let

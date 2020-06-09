@@ -42,6 +42,7 @@ type
     # Simulator types
     score* = tuple
         duration: int
+        difference: int
         threshold: float
         buy: int
         sell: int

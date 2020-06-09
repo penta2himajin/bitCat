@@ -276,40 +276,56 @@ proc simulateSimpleMovingAverage*(data: seq[chart], budget: float, score_thresho
     
     max_score
 
-proc simulateMovingAverageEstimate*(data: seq[chart], budget: float): score =
-    const
-        duration = 120
-        difference = 90
-    let ma_seq = data.getMovingAverage duration
+proc simulateMovingAverageEstimate*(data: seq[chart], budget: float, score_threshold: float = 1): score =
     var max_score: score
 
-    for t in 990..1000:
+    for t in 950..1000:
         let threshold = t / 1000
-        var
-            score = 0
-            reserve = 0.0
-        
-        for index in duration + 1..<data.len:
-            let
-                now_price = data[index].close
-                estimated = ma_seq[index - duration] + (ma_seq[index - duration] - ma_seq[index - duration - 1]) * difference
-            
-            if now_price > estimated * (1 + (1 - threshold)):
-                if reserve == 0: # Buy Operation
-                    reserve = truncate((budget + float score) / (now_price + spread), 8)
-                    score -= int truncate((now_price + spread) * reserve, 8) - budget
-            
-            elif now_price < estimated * threshold:
-                if reserve != 0: # Sell Operation
-                    score += int truncate(now_price * reserve, 8) - budget
-                    reserve = 0
-        
-        if reserve != 0:
-            score += int truncate(data[data.len - 1].close * reserve, 8) - budget
-            
-        if score > max_score.score:
-            max_score.threshold = threshold
-            max_score.score = score
+        for duration in 15..60:
+            let ma_seq = data.getMovingAverage duration
+
+            for difference in 0..duration - int duration/10:
+                for p in 990..1000:
+                    let price_threshold = p / 1000
+                    var
+                        score = 0
+                        reserve = 0.0
+                        buy_price = 0.0
+                    
+                    for index in duration + 1..<data.len:
+                        let
+                            now_price = data[index].close
+                            estimated = ma_seq[index - duration] + (ma_seq[index - duration] - ma_seq[index - duration - 1]) * difference.float
+                        
+                        if now_price > estimated * (1 + (1 - threshold)):
+                            if reserve == 0: # Buy Operation
+                                reserve = truncate((budget + float score) / (now_price + spread), 8)
+                                score -= int truncate((now_price + spread) * reserve, 8) - budget
+                                buy_price = (now_price + spread)
+                        
+                        if now_price < buy_price * price_threshold:
+                            score += int truncate(now_price * reserve, 8) - budget
+                            reserve = 0
+                            buy_price = 0
+                        
+                        elif now_price < estimated * threshold:
+                            if reserve != 0: # Sell Operation
+                                score += int truncate(now_price * reserve, 8) - budget
+                                reserve = 0
+                                buy_price = 0
+                    
+                    if reserve != 0:
+                        score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+                        
+                    if score > max_score.score:
+                        max_score.duration = duration
+                        max_score.difference = difference
+                        max_score.threshold = threshold
+                        max_score.price = price_threshold
+                        max_score.score = score
+                
+                    if score.float > budget * score_threshold:
+                        echo "duration: ", duration, " difference: ", difference, " threshold: ", threshold, " price_threshold: ", price_threshold, " score: ", score
     
     max_score
 
@@ -596,31 +612,36 @@ proc simulateSimpleMovingAverage_arg*(data: seq[chart], budget: float, duration:
     
     (max_score, score_chart)
 
-proc simulateMovingAverageEstimate_arg*(data: seq[chart], budget: float, threshold: float): (score, seq[float]) =
-    const
-        duration = 120
-        difference = 90
+proc simulateMovingAverageEstimate_arg*(data: seq[chart], budget: float, duration: int, difference: int, threshold: float, price_threshold: float): (score, seq[float]) =
     let ma_seq = data.getMovingAverage duration
     var
         max_score: score
         score_chart = newSeq[float]()
         score = 0
         reserve = 0.0
+        buy_price = 0.0
         
     for index in duration + 1..<data.len:
         let
             now_price = data[index].close
-            estimated = ma_seq[index - duration] + (ma_seq[index - duration] - ma_seq[index - duration - 1]) * difference
+            estimated = ma_seq[index - duration] + (ma_seq[index - duration] - ma_seq[index - duration - 1]) * difference.float
             
         if now_price > estimated * (1 + (1 - threshold)):
             if reserve == 0: # Buy Operation
                 reserve = truncate((budget + float score) / (now_price + spread), 8)
                 score -= int truncate((now_price + spread) * reserve, 8) - budget
+                buy_price = 0
+                        
+        if now_price < buy_price * price_threshold:
+            score += int truncate(now_price * reserve, 8) - budget
+            reserve = 0
+            buy_price = 0
             
         elif now_price < estimated * threshold:
             if reserve != 0: # Sell Operation
                 score += int truncate(now_price * reserve, 8) - budget
                 reserve = 0
+                buy_price = 0
         
         if reserve != 0:
             score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
@@ -629,7 +650,9 @@ proc simulateMovingAverageEstimate_arg*(data: seq[chart], budget: float, thresho
         
     if reserve != 0:
         score += int truncate(data[data.len - 1].close * reserve, 8) - budget
-            
+    
+    max_score.duration = duration
+    max_score.difference = difference
     max_score.threshold = threshold
     max_score.score = score
     score_chart = newSeq[float](data.len - score_chart.len) & score_chart
@@ -661,37 +684,38 @@ when isMainModule:
             for d in data:
                 (d.close / data[0].close - 1) * 100
         #smd_max = data.simulateSimpleMovingDifference budget
-        tmd_max = data.simulateThresholdMovingDifference budget
-        sudmd_max = data.simulateSimpleUpDownMovingDifference budget
-        tudmd_max = data.simulateThresholdUpDownMovingDifference(budget, sudmd_max.buy, sudmd_max.sell)
+        #tmd_max = data.simulateThresholdMovingDifference budget
+        #sudmd_max = data.simulateSimpleUpDownMovingDifference budget
+        #tudmd_max = data.simulateThresholdUpDownMovingDifference(budget, sudmd_max.buy, sudmd_max.sell)
         #sma_max = data.simulateSimpleMovingAverage budget
-        mr_max = data.simulateThresholdMovingReversal budget
-        mae_max = data.simulateMovingAverageEstimate budget
+        #mr_max = data.simulateThresholdMovingReversal budget
+        mae_max = data.simulateMovingAverageEstimate(budget, 0.01)
         horizon = newSeqFromCount[float](data.len)
 
     #echo " SMD  max: ", smd_max
-    echo " TMD  max: ", tmd_max
-    echo "SUDMD max: ", sudmd_max
-    echo "TUDMD max: ", tudmd_max
+    #echo " TMD  max: ", tmd_max
+    #echo "SUDMD max: ", sudmd_max
+    #echo "TUDMD max: ", tudmd_max
     #echo " SMA  max: ", sma_max
-    echo "  MR  max: ", mr_max
-    echo "  MAE max: ", mae_max
+    #echo "  MR  max: ", mr_max
+    echo " MAE  max: ", mae_max
 
     let
         #smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
-        tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price)[1]
+        #tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price)[1]
         #sudmd_max_score_chart = data.simulateSimpleUpDownMovingDifference_arg(budget, sudmd_max.buy, sudmd_max.sell)[1]
-        tudmd_max_score_chart = data.simulateThresholdUpDownMovingDifference_arg(budget, tudmd_max.buy, tudmd_max.sell, tudmd_max.price)[1]
-        mr_max_score_chart = data.simulateThresholdMovingReversal_arg(budget, mr_max.buy, mr_max.sell, mr_max.threshold)[1]
-        mae_max_score_chart = data.simulateMovingAverageEstimate_arg(budget, mae_max.threshold)[1]
+        #tudmd_max_score_chart = data.simulateThresholdUpDownMovingDifference_arg(budget, tudmd_max.buy, tudmd_max.sell, tudmd_max.price)[1]
+        #mr_max_score_chart = data.simulateThresholdMovingReversal_arg(budget, mr_max.buy, mr_max.sell, mr_max.threshold)[1]
+        mae_max_score_chart = data.simulateMovingAverageEstimate_arg(budget, mae_max.duration, mae_max.difference, mae_max.threshold, mae_max.price)[1]
 
     horizon.plotter("", "",
         (data_close, "close"),
         #(smd_max_score_chart, &"SMD (threshold: {smd_max.threshold.int})"),
-        (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price.truncate(4) * 100}%)"),
-        (tudmd_max_score_chart, &"TUDMD (Buy: {tudmd_max.buy}, Sell: {tudmd_max.sell}, Price: {tudmd_max.price.truncate(4) * 100}%)"),
-        (mr_max_score_chart, &"MR (Buy: {mr_max.buy}, Sell: {mr_max.sell}, Reverse: {int mr_max.threshold * 100}%)"),
-        (mae_max_score_chart, &"MAE (threshold: {mae_max.threshold * 100}%)"),
+        #(tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price.truncate(4) * 100}%)"),
+        #(tudmd_max_score_chart, &"TUDMD (Buy: {tudmd_max.buy}, Sell: {tudmd_max.sell}, Price: {tudmd_max.price.truncate(4) * 100}%)"),
+        #(mr_max_score_chart, &"MR (Buy: {mr_max.buy}, Sell: {mr_max.sell}, Reverse: {int mr_max.threshold * 100}%)"),
+        (mae_max_score_chart, &"MAE (duration: {mae_max.duration}, difference: {mae_max.difference}, threshold: {mae_max.threshold * 100}%, price threshold: {mae_max.price * 100}%)"),
+        (data.simulateMovingAverageEstimate_arg(budget, 120, 90, 0.994, 0)[1], "MAE (threshold: 99.4%)")
     )
 
     #[ let
