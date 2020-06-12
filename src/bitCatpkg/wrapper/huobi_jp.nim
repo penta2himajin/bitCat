@@ -2,12 +2,12 @@ import httpclient, json, sugar, times, algorithm, uri, strutils, hmac, base64, u
 import ../types
 
 
-let
-    end_point = "https://api-cloud.huobi.co.jp"
+let end_point = "https://api-cloud.huobi.co.jp"
 
 func `~`*(left: string, right: string): string =
     left & "\n" & right
 
+#[ Public API ]#
 proc getChart*(symbol: string, period_arg: string, size: int = 150): seq[chart] =
     let
         period = if period_arg == "1hour": "60min" else: period_arg
@@ -52,6 +52,7 @@ proc getBoard*(symbol: string, aggregate: int = 0): board =
     
     board
 
+#[ Authentication ]#
 proc getSignature(api: api, http_method: string, path: string, arguments: openArray[(string, string)] = @[]): string =
     var
         query: seq[(string, string)] = @{
@@ -67,7 +68,8 @@ proc getSignature(api: api, http_method: string, path: string, arguments: openAr
     query.sort()
     "?" & query.encodeQuery & "&Signature=" & hmac_sha256(key=api.secret, data=http_method ~ "api-cloud.huobi.co.jp" ~ path ~ query.encodeQuery).encode.encodeUrl
 
-proc getID(api: api): int =
+#[ Private API (needs API auth) ]#
+proc getUserID(api: api): int =
     newHttpClient()
         .getContent(
             end_point & "/v1/account/accounts" & api.getSignature(
@@ -78,7 +80,7 @@ proc getID(api: api): int =
 
 proc getAccount*(api: api): account =
     let
-        id = api.getID
+        id = api.getUserID
         path = "/v1/account/accounts/" & $id & "/balance"
         entry_point = end_point & path & api.getSignature("GET", path)
         client = newHttpClient()
@@ -95,7 +97,7 @@ proc getAccount*(api: api): account =
 
 proc postOrder*(api: api, order_type: string, product_pair: string, side: string, quantity: float): string =
     let
-        id = api.getID
+        id = api.getUserID
         path = "/v1/order/orders/place"
         body = $ %* {
             "account-id": $id,
@@ -108,7 +110,7 @@ proc postOrder*(api: api, order_type: string, product_pair: string, side: string
 
     let
         entry_point = end_point & path & api.getSignature("POST", path)
-        client = newHttpClient()
+        client = newHttpClient(headers=newHttpHeaders({"Content-Type": "application/json"}))
         response = client.postContent(url=entry_point, body=body)
     
     response
@@ -118,4 +120,4 @@ when isMainModule:
     from ../../token import huobi_token
 
     echo huobi_token.getAccount
-    echo huobi_token.postOrder("market", "btcjpy", "buy", 0.001)
+    echo huobi_token.postOrder("market", "btcjpy", "buy", 0.002)

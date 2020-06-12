@@ -90,7 +90,7 @@ proc simulateThresholdMovingDifference*(data: seq[chart], budget: float, score_t
     
     max_score
 
-proc simulateSimpleUpDownMovingDifference*(data: seq[chart], budget: float, score_threshold: float = 1): score =
+proc simulateSimpleTrendMovingDifference*(data: seq[chart], budget: float, score_threshold: float = 1): score =
     let differences = data.getDifference
     var max_score: score
 
@@ -128,7 +128,7 @@ proc simulateSimpleUpDownMovingDifference*(data: seq[chart], budget: float, scor
     
     max_score
 
-proc simulateThresholdUpDownMovingDifference*(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int, score_threshold: float = 1): score =
+proc simulateThresholdTrendMovingDifference*(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int, score_threshold: float = 1): score =
     let differences = data.getDifference
     var max_score: score
 
@@ -175,6 +175,58 @@ proc simulateThresholdUpDownMovingDifference*(data: seq[chart], budget: float, b
     
     max_score
 
+proc simulateSimpleMovingReversal*(data: seq[chart], budget: float, score_threshold: float = 1): score =
+    var max_score: score
+
+    for reverse_threshold in countup(80, 100):
+        var
+            score   = 0
+            reserve = 0.0
+            trend   = if data[0].close < data[1].close: true else: false
+            high    = if trend: data[1].close else: data[0].close
+            low     = if trend: data[0].close else: data[1].close
+
+        for index in 2..<data.len:
+            let now_price = data[index].close
+
+            if not trend:
+                if now_price > low * (1 + (1 - reverse_threshold / 100)):
+                    if reserve == 0: # Buy Operation
+                        reserve = truncate((budget + float score) / (now_price + spread), 6)
+                        score -= int truncate((now_price + spread) * reserve, 6) - budget
+
+                    trend = true
+                    high = now_price
+
+                else:
+                    if now_price < low:
+                        low = now_price
+
+            else:
+                if now_price < high * (reverse_threshold / 100):
+                    if  reserve != 0:# Sell Operation
+                        score += int truncate(now_price * reserve, 6) - budget
+                        reserve = 0
+
+                    trend = false
+                    low = now_price
+
+                else:
+                    if now_price > high:
+                        high = now_price
+
+        if reserve != 0:
+            score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+    
+        if score > max_score.score:
+            max_score.threshold = reverse_threshold / 100
+            max_score.score = score
+
+        if score.float > budget * score_threshold:
+            echo "reverse: ", reverse_threshold / 100, " score: ", score
+
+    max_score
+
 proc simulateThresholdMovingReversal*(data: seq[chart], budget: float, score_threshold: float = 1): score =
     var max_score: score
 
@@ -200,11 +252,11 @@ proc simulateThresholdMovingReversal*(data: seq[chart], budget: float, score_thr
                         if now_price > low * (1 + (1 - reverse_threshold / 100)):
                             trend = true
                             high = now_price
-                        
+
                         else:
                             if now_price < low:
                                 low = now_price
-                    
+
                     else:
                         if now_price > low + sell_threshold.float:
                             if  reserve != 0:# Sell Operation
@@ -218,20 +270,20 @@ proc simulateThresholdMovingReversal*(data: seq[chart], budget: float, score_thr
 
                             trend = false
                             low = now_price
-                        
+
                         else:
                             if now_price > high:
                                 high = now_price
-                
+
                 if reserve != 0:
                     score += int truncate(data[data.len - 1].close * reserve, 8) - budget
-                        
+  
                 if score > max_score.score:
                     max_score.buy = buy_threshold
                     max_score.sell = sell_threshold
                     max_score.threshold = reverse_threshold / 100
                     max_score.score = score
-                        
+
                 if score.float > budget * score_threshold:
                     echo "buy: ", buy_threshold, " sell: ", sell_threshold, " reverse: ", reverse_threshold / 100, " score: ", score
 
@@ -425,7 +477,7 @@ proc simulateThresholdMovingDifference_arg*(data: seq[chart], budget: float, thr
     
     (max_score, score_chart)
 
-proc simulateSimpleUpDownMovingDifference_arg*(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int, visualize = false): (score, seq[float]) =
+proc simulateSimpleTrendMovingDifference_arg*(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int, visualize = false): (score, seq[float]) =
     let differences = data.getDifference
     var
         max_score: score
@@ -463,7 +515,7 @@ proc simulateSimpleUpDownMovingDifference_arg*(data: seq[chart], budget: float, 
     
     (max_score, score_chart)
 
-proc simulateThresholdUpDownMovingDifference_arg*(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int, price_threshold: float): (score, seq[float]) =
+proc simulateThresholdTrendMovingDifference_arg*(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int, price_threshold: float): (score, seq[float]) =
     let differences = data.getDifference
     var
         max_score: score
@@ -509,6 +561,59 @@ proc simulateThresholdUpDownMovingDifference_arg*(data: seq[chart], budget: floa
     max_score.score = score
     score_chart = newSeq[float](data.len - score_chart.len) & score_chart
     
+    (max_score, score_chart)
+
+proc simulateSimpleMovingReversal_arg*(data: seq[chart], budget: float, reverse_threshold: float): (score, seq[float]) =
+    var
+        max_score: score
+        score_chart = newSeq[float]()
+        score   = 0
+        reserve = 0.0
+        trend   = if data[0].close < data[1].close: true else: false
+        high    = if trend: data[1].close else: data[0].close
+        low     = if trend: data[0].close else: data[1].close
+
+    for index in 2..<data.len:
+        let now_price = data[index].close
+                    
+        if not trend:
+            if now_price > low * (1 + (1 - reverse_threshold)):
+                if reserve == 0: # Buy Operation
+                    reserve = truncate((budget + float score) / (now_price + spread), 6)
+                    score -= int truncate((now_price + spread) * reserve, 6) - budget
+
+                trend = true
+                high = now_price
+                        
+            else:
+                if now_price < low:
+                    low = now_price
+                    
+        else:
+            if now_price < high * (reverse_threshold):
+                if  reserve != 0:# Sell Operation
+                    score += int truncate(now_price * reserve, 6) - budget
+                    reserve = 0
+
+                trend = false
+                low = now_price
+
+            else:
+                if now_price > high:
+                    high = now_price
+        
+        if reserve != 0:
+            score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
+        else:
+            score_chart.add score.float * 100 / budget
+                
+    if reserve != 0:
+        score += int truncate(data[data.len - 1].close * reserve, 8) - budget                    
+
+    max_score.threshold = reverse_threshold
+    max_score.score = score
+    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
+
     (max_score, score_chart)
 
 proc simulateThresholdMovingReversal_arg*(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int, reverse_threshold: float): (score, seq[float]) =
@@ -572,46 +677,6 @@ proc simulateThresholdMovingReversal_arg*(data: seq[chart], budget: float, buy_t
 
     (max_score, score_chart)
 
-proc simulateSimpleMovingAverage_arg*(data: seq[chart], budget: float, duration: int, visualize = false): (score, seq[float]) =
-    let ma = data.getMovingAverage duration
-    var
-        max_score: score
-        score_chart = newSeq[float]()
-        score = 0
-        reserve = 0.0
-        old_indicator: float
-        
-    for index in 0..<ma.len:
-        let
-            now_price = data[duration + index - 1].close
-            indicator = ma[index]
-            
-        if indicator > old_indicator:
-            if reserve == 0: # Buy Operation
-                reserve = truncate((budget + float score) / (now_price + spread), 6)
-                score -= int truncate((now_price + spread) * reserve, 6) - budget
-            
-        else:
-            if reserve != 0:
-                score += int truncate(now_price * reserve, 6) - budget
-                reserve = 0
-        
-        if reserve != 0:
-            score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
-        else:
-            score_chart.add score.float * 100 / budget
-        
-        old_indicator = indicator
-        
-    if reserve != 0:
-        score += int truncate(data[data.len - 1].close * reserve, 8) - budget
-
-    max_score.duration = duration
-    max_score.score = score
-    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
-    
-    (max_score, score_chart)
-
 proc simulateMovingAverageEstimate_arg*(data: seq[chart], budget: float, duration: int, difference: int, threshold: float, price_threshold: float): (score, seq[float]) =
     let ma_seq = data.getMovingAverage duration
     var
@@ -659,6 +724,59 @@ proc simulateMovingAverageEstimate_arg*(data: seq[chart], budget: float, duratio
     
     (max_score, score_chart)
 
+proc simulateSimpleDurationReversal*(data: seq[chart], budget: float, buy: int, sell: int): (score, seq[float]) =
+    var
+        max_score: score
+        score_chart = newSeq[float]()
+        trend = if data[1].close - data[0].close > 0: true else: false
+        trend_index = 0
+        score = 0
+        reserve = 0.0
+    
+    for i in 2..<data.len:
+        let now_price = data[i].close
+
+        if not trend:
+            if data[i].close - data[i - 1].close > 0:
+                trend = true
+                trend_index = i
+
+            if i - trend_index + 1 == buy:
+                if reserve == 0: # Buy Operation
+                    reserve = truncate((budget.int + score) / int(now_price + spread), 8)
+                    score -= int truncate((now_price + spread) * reserve, 8) - budget
+                    #[ echo "BUY : ", score + truncate(reserve * now_price, 0).int,
+                        "\tnet: ", (score + truncate(reserve * now_price, 0).int) - budget.int,
+                        " \ttime: ", data[i + 1].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss") ]#
+
+        else:
+            if data[i].close - data[i - 1].close < 0:
+                trend = false
+                trend_index = i
+
+            if i - trend_index + 1 == sell and reserve != 0: # Sell Operation
+                if reserve != 0: # Sell Operation
+                    score += int truncate(now_price * reserve, 8) - budget
+                    reserve = 0
+                    #[ echo "SELL: ", score + int budget,
+                        "\tnet: ", score,
+                        " \ttime: ", data[i + 1].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss") ]#
+        
+        if reserve != 0:
+            score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
+        else:
+            score_chart.add score.float * 100 / budget
+    
+    if reserve != 0:
+        score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+    
+    max_score.buy = buy
+    max_score.sell = sell
+    max_score.score = score
+    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
+    
+    (max_score, score_chart)
+
 
 when isMainModule:
     stdout.write "symbol: "
@@ -680,71 +798,43 @@ when isMainModule:
     echo "*****************************"
 
     let
+        horizon = newSeqFromCount[float](data.len)
         data_close = collect(newSeq):
             for d in data:
                 (d.close / data[0].close - 1) * 100
-        #smd_max = data.simulateSimpleMovingDifference budget
-        #tmd_max = data.simulateThresholdMovingDifference budget
-        #sudmd_max = data.simulateSimpleUpDownMovingDifference budget
-        #tudmd_max = data.simulateThresholdUpDownMovingDifference(budget, sudmd_max.buy, sudmd_max.sell)
-        #sma_max = data.simulateSimpleMovingAverage budget
-        #mr_max = data.simulateThresholdMovingReversal budget
+        smd_max = data.simulateSimpleMovingDifference budget
+        tmd_max = data.simulateThresholdMovingDifference budget
+        stmd_max = data.simulateSimpleTrendMovingDifference budget
+        ttmd_max = data.simulateThresholdTrendMovingDifference(budget, stmd_max.buy, stmd_max.sell)
+        smr_max = data.simulateSimpleMovingReversal(budget, -1)
+        tmr_max = data.simulateThresholdMovingReversal budget
         mae_max = data.simulateMovingAverageEstimate budget
-        horizon = newSeqFromCount[float](data.len)
-
-    #echo " SMD  max: ", smd_max
-    #echo " TMD  max: ", tmd_max
-    #echo "SUDMD max: ", sudmd_max
-    #echo "TUDMD max: ", tudmd_max
-    #echo " SMA  max: ", sma_max
-    #echo "  MR  max: ", mr_max
-    echo " MAE  max: ", mae_max
-
-    let
-        #smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
-        #tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price)[1]
-        #sudmd_max_score_chart = data.simulateSimpleUpDownMovingDifference_arg(budget, sudmd_max.buy, sudmd_max.sell)[1]
-        #tudmd_max_score_chart = data.simulateThresholdUpDownMovingDifference_arg(budget, tudmd_max.buy, tudmd_max.sell, tudmd_max.price)[1]
-        #mr_max_score_chart = data.simulateThresholdMovingReversal_arg(budget, mr_max.buy, mr_max.sell, mr_max.threshold)[1]
+        smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
+        tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price)[1]
+        ttmd_max_score_chart = data.simulateThresholdTrendMovingDifference_arg(budget, ttmd_max.buy, ttmd_max.sell, ttmd_max.price)[1]
+        smr_max_score_chart = data.simulateSimpleMovingReversal_arg(budget, smr_max.threshold)[1]
+        tmr_max_score_chart = data.simulateThresholdMovingReversal_arg(budget, tmr_max.buy, tmr_max.sell, tmr_max.threshold)[1]
         mae_max_score_chart = data.simulateMovingAverageEstimate_arg(budget, mae_max.duration, mae_max.difference, mae_max.threshold, mae_max.price)[1]
+
+    echo " SMD  max: ", smd_max
+    echo " TMD  max: ", tmd_max
+    echo "STMD max: ", stmd_max
+    echo "TTMD max: ", ttmd_max
+    echo " SMR  max: ", smr_max
+    echo " TMR  max: ", tmr_max
+    echo " MAE  max: ", mae_max
 
     horizon.plotter("", "",
         (data_close, "close"),
-        #(smd_max_score_chart, &"SMD (threshold: {smd_max.threshold.int})"),
-        #(tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price.truncate(4) * 100}%)"),
-        #(tudmd_max_score_chart, &"TUDMD (Buy: {tudmd_max.buy}, Sell: {tudmd_max.sell}, Price: {tudmd_max.price.truncate(4) * 100}%)"),
-        #(mr_max_score_chart, &"MR (Buy: {mr_max.buy}, Sell: {mr_max.sell}, Reverse: {int mr_max.threshold * 100}%)"),
+        (smd_max_score_chart, &"SMD (threshold: {smd_max.threshold.int})"),
+        (tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price.truncate(4) * 100}%)"),
+        (ttmd_max_score_chart, &"TTMD (Buy: {ttmd_max.buy}, Sell: {ttmd_max.sell}, Price: {ttmd_max.price.truncate(4) * 100}%)"),
+        (smr_max_score_chart, &"SMR (Reverse: {int smr_max.threshold * 100}%)"),
+        (data.simulateSimpleMovingReversal_arg(budget, 0.95)[1], "SMR (Reverse: 100%)"),
+        (tmr_max_score_chart, &"TMR (Buy: {tmr_max.buy}, Sell: {tmr_max.sell}, Reverse: {int tmr_max.threshold * 100}%)"),
+        (data.simulateThresholdMovingReversal_arg(budget, 500, 500, 0.99)[1], "TMR (Buy: 500, Sell: 500, Reverse: 99%)"),
         (mae_max_score_chart, &"MAE (duration: {mae_max.duration}, difference: {mae_max.difference}, threshold: {mae_max.threshold * 100}%, price threshold: {mae_max.price * 100}%)"),
-        (data.simulateMovingAverageEstimate_arg(budget, 120, 90, 0.994, 0)[1], "MAE (threshold: 99.4%)")
     )
 
-    #[ let
-        data_close = collect(newSeq):
-            for d in data:
-                (d.close / data[0].close - 1) * 100
-        differences = data.getDifference
-        horizon = newSeqFromCount[float](data.len)
-    var
-        diff_sums = collect(newSeq):
-            for i in 0..differences.len - diff:
-                sum[float](differences[i..i + diff - 1])
-        diff_average = collect(newSeq):
-            for i in 0..differences.len - diff:
-                average[float](differences[i..i + diff - 1])
-        diff_test = collect(newSeq):
-            for i in 0..<differences.len:
-                differences[i] / data[i + 1].close * 100
-    
-    diff_sums = newSeq[float](data.len - diff_sums.len) & diff_sums
-    diff_average = newSeq[float](data.len - diff_average.len) & diff_average
-    diff_test = newSeq[float](data.len - diff_test.len) & diff_test
-
-    horizon.plotter("time", "move",
-        (data_close, "real data"),
-        #(diff_sums, &"difference sum"),
-        #(diff_average, "difference average"),
-        (diff_test, "diff test") 
-    ) ]#
-
-    echo "press any key to continue..."
+    stdout.write "press any key to continue..."
     discard stdin.readChar
