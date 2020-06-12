@@ -563,7 +563,7 @@ proc simulateThresholdTrendMovingDifference_arg*(data: seq[chart], budget: float
     
     (max_score, score_chart)
 
-proc simulateSimpleMovingReversal_arg*(data: seq[chart], budget: float, reverse_threshold: float): (score, seq[float]) =
+proc simulateSimpleMovingReversal_arg*(data: seq[chart], budget: float, reverse_threshold: float, visualize: bool = false): (score, seq[float]) =
     var
         max_score: score
         score_chart = newSeq[float]()
@@ -581,6 +581,10 @@ proc simulateSimpleMovingReversal_arg*(data: seq[chart], budget: float, reverse_
                 if reserve == 0: # Buy Operation
                     reserve = truncate((budget + float score) / (now_price + spread), 6)
                     score -= int truncate((now_price + spread) * reserve, 6) - budget
+                    if visualize:
+                        echo "BUY : ", score + truncate(reserve * now_price, 0).int,
+                            " net: ", (score + truncate(reserve * now_price, 0).int) - budget.int,
+                            " time: ", data[index + 1].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
 
                 trend = true
                 high = now_price
@@ -594,6 +598,10 @@ proc simulateSimpleMovingReversal_arg*(data: seq[chart], budget: float, reverse_
                 if  reserve != 0:# Sell Operation
                     score += int truncate(now_price * reserve, 6) - budget
                     reserve = 0
+                    if visualize:
+                        echo "SELL: ", score + int budget,
+                            " net: ", score,
+                            " time: ", data[index + 1].timestamp.fromUnix.format("yyyy-MM-dd HH:mm:ss")
 
                 trend = false
                 low = now_price
