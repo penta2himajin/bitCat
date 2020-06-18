@@ -178,7 +178,7 @@ proc simulateThresholdTrendMovingDifference*(data: seq[chart], budget: float, bu
 proc simulateSimpleMovingReversal*(data: seq[chart], budget: float, score_threshold: float = 1): score =
     var max_score: score
 
-    for reverse_threshold in countup(80, 100):
+    for reverse_threshold in countup(90, 100):
         var
             score   = 0
             reserve = 0.0
