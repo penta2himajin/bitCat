@@ -814,7 +814,7 @@ when isMainModule:
         tmd_max = data.simulateThresholdMovingDifference budget
         stmd_max = data.simulateSimpleTrendMovingDifference budget
         ttmd_max = data.simulateThresholdTrendMovingDifference(budget, stmd_max.buy, stmd_max.sell)
-        smr_max = data.simulateSimpleMovingReversal(budget)
+        smr_max = data.simulateSimpleMovingReversal budget
         tmr_max = data.simulateThresholdMovingReversal budget
         mae_max = data.simulateMovingAverageEstimate budget
         smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
