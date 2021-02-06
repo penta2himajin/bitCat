@@ -1,5 +1,6 @@
 import tables
 
+
 type
     # API types 
     api* = tuple
@@ -38,13 +39,3 @@ type
         string,
         float
     ]
-
-    # Simulator types
-    score* = tuple
-        duration: int
-        difference: int
-        threshold: float
-        buy: int
-        sell: int
-        price: float
-        score: int

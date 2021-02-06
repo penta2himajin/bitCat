@@ -1,3 +1,4 @@
 *.exe
+bitCat
 /.vscode
 token.nim

@@ -1,11 +1,8 @@
 import httpclient, json, sugar, times, algorithm, uri, strutils, hmac, base64, uri, tables
-import ../types
+import types
 
 
 let end_point = "https://api-cloud.huobi.co.jp"
-
-func `~`*(left: string, right: string): string =
-    left & "\n" & right
 
 #[ Public API ]#
 proc getChart*(symbol: string, period_arg: string, size: int = 150): seq[chart] =
@@ -66,7 +63,7 @@ proc getSignature(api: api, http_method: string, path: string, arguments: openAr
         query.add(argument)
     
     query.sort()
-    "?" & query.encodeQuery & "&Signature=" & hmac_sha256(key=api.secret, data=http_method ~ "api-cloud.huobi.co.jp" ~ path ~ query.encodeQuery).encode.encodeUrl
+    "?" & query.encodeQuery & "&Signature=" & hmac_sha256(key=api.secret, data=[http_method, "api-cloud.huobi.co.jp", path, query.encodeQuery].join("\n")).encode.encodeUrl
 
 #[ Private API (needs API auth) ]#
 proc getUserID(api: api): int =
@@ -117,6 +114,6 @@ proc postOrder*(api: api, order_type: string, product_pair: string, side: string
 
 
 when isMainModule:
-    from ../../token import huobi_token
+    from ../token import huobi_jp_token
 
-    echo huobi_token.getAccount
+    echo huobi_jp_token.getAccount

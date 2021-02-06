@@ -1,5 +1,6 @@
 import times, httpClient, json, sugar, strutils, jwt, tables, uri
-import ../types, ../library
+import types
+
 
 const end_point = "https://api.liquid.com"
 
@@ -124,7 +125,7 @@ proc getSignature(api: api, path: string): HttpHeaders =
     ].newHttpHeaders
 
 #[ Private API (needs API auth) ]#
-proc getAccount*(api: api): Table[string, float] =
+proc getAccount*(api: api): account =
     let
         path = "/accounts/balance"
         client = newHttpClient(headers=api.getSignature(path))
@@ -146,7 +147,7 @@ proc postOrder*(api: api, order_type: string, product_pair: string, side: string
                 "order_type": order_type,
                 "product_id": $getProduct(product_pair).id,
                 "side": side,
-                "quantity": quantity.trunc_str 8
+                "quantity": quantity.formatFloat(ffDecimal, 8)
             }
         }
 
@@ -160,6 +161,6 @@ proc postOrder*(api: api, order_type: string, product_pair: string, side: string
 
 
 when isMainModule:
-    from ../../token import liquid_token
+    from ../token import liquid_token
 
     echo liquid_token.getAccount
