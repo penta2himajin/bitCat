@@ -160,4 +160,6 @@ proc postOrder*(api: api, order_type: string, product_pair: string, side: string
 
 
 when isMainModule:
-    echo getProduct("btcjpy").id
+    from ../../token import liquid_token
+
+    echo liquid_token.getAccount

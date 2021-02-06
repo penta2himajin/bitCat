@@ -389,6 +389,61 @@ proc simulateMovingAverageEstimate*(data: seq[chart], budget: float, score_thres
     
     max_score
 
+proc simulateTrendThreshold(data: seq[chart], budget: float): score =
+    var
+        max_score: score
+    
+    for buy_threshold in countdown(-spread, -10000, spread):
+        for sell_threshold in countup(spread, 10000, spread):
+            var
+                score: int
+                reserve: float
+                buy_price: float
+                trend = if data[0].close < data[1].close: true else: false
+                trend_price_range: int
+            
+            for index in 1..<data.len:
+                let
+                    now_price = data[index].close
+                    now_trend = if data[index - 1].close < data[index].close: true else: false
+
+                if not trend: # Down Trend
+                    if not now_trend: # Trend continuous
+                        trend_price_range += int data[index].close - data[index - 1].close
+
+                        if trend_price_range < buy_threshold:
+                            if reserve == 0: # Buy Operation
+                                reserve = truncate((budget + float score) / (now_price + spread), 6)
+                                score -= int truncate((now_price + spread) * reserve, 6) - budget
+                                buy_price = now_price
+
+                    else: # Trend shift
+                        trend = true
+                        trend_price_range = int data[index].close - data[index - 1].close
+
+                else: # Up Trend
+                    if now_trend: # Trend continuous
+                        trend_price_range += int data[index].close - data[index - 1].close
+
+                        if trend_price_range > sell_threshold:
+                            if  reserve != 0:# Sell Operation
+                                score += int truncate(now_price * reserve, 6) - budget
+                                reserve = 0
+
+                    else: # Trend Shift
+                        trend = false
+                        trend_price_range = int data[index].close - data[index - 1].close
+                        
+            if reserve != 0:
+                score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+
+            if score > max_score.score:
+                max_score.score = score
+                max_score.buy = buy_threshold
+                max_score.sell = sell_threshold
+
+    max_score
+
 #[ Simulator with Argument parameters ]#
 proc simulateSimpleMovingDifference_arg*(data: seq[chart], budget: float, threshold: int, visualize: bool = false): (score, seq[float]) =
     let
@@ -856,35 +911,113 @@ proc simulateAutomatedSimpleMovingReversal*(data: seq[chart], budget: float, dur
 
     (max_score, score_chart)
 
-proc simulateSimplePriceDiff(data: seq[chart], budget: float): (score, seq[float]) =
+proc simulateTrendThreshold_arg(data: seq[chart], budget: float, buy_threshold: int, sell_threshold: int): (score, seq[float]) =
     var
         max_score: score
         score_chart: seq[float]
         score: int
         reserve: float
         buy_price: float
-    
+        trend = if data[0].close < data[1].close: true else: false
+        trend_price_range: int
+            
     for index in 1..<data.len:
         let
             now_price = data[index].close
-            old_price = data[index - 1].close
-        
-        if now_price < old_price - spread:
-            if reserve == 0: # Buy Operation
-                reserve = truncate((budget + float score) / (now_price + spread), 6)
-                score -= int truncate((now_price + spread) * reserve, 6) - budget
-        
-        
-        if now_price > buy_price + spread:
-            if  reserve != 0:# Sell Operation
-                score += int truncate(now_price * reserve, 6) - budget
-                reserve = 0
-        
+            now_trend = if data[index - 1].close < data[index].close: true else: false
+
+        if not trend: # Down Trend
+            if not now_trend: # Trend continuous
+                trend_price_range += int data[index].close - data[index - 1].close
+
+                if trend_price_range < buy_threshold:
+                    if reserve == 0: # Buy Operation
+                        reserve = truncate((budget + float score) / (now_price + spread), 6)
+                        score -= int truncate((now_price + spread) * reserve, 6) - budget
+                        buy_price = now_price
+
+            else: # Trend shift
+                trend = true
+                trend_price_range = int data[index].close - data[index - 1].close
+
+        else: # Up Trend
+            if now_trend: # Trend continuous
+                trend_price_range += int data[index].close - data[index - 1].close
+
+                if trend_price_range > sell_threshold:
+                    if  reserve != 0:# Sell Operation
+                        score += int truncate(now_price * reserve, 6) - budget
+                        reserve = 0
+
+            else: # Trend Shift
+                trend = false
+                trend_price_range = int data[index].close - data[index - 1].close
+
         if reserve != 0:
             score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
         else:
             score_chart.add score.float * 100 / budget
-                
+                        
+    if reserve != 0:
+        score += int truncate(data[data.len - 1].close * reserve, 8) - budget
+
+    max_score.score = score
+    max_score.buy = buy_threshold
+    max_score.sell = sell_threshold
+    score_chart = newSeq[float](data.len - score_chart.len) & score_chart
+
+    (max_score, score_chart)
+
+proc simulateAutomatedTrendThreshold(data: seq[chart], budget: float, duration: int): (score, seq[float]) =
+    var
+        max_score: score
+        score_chart: seq[float]
+        score: int
+        reserve: float
+        buy_price: float
+        trend = if data[duration - 1].close < data[duration].close: true else: false
+        trend_price_range: int
+            
+    for index in duration..<data.len:
+        let
+            now_price = data[index].close
+            now_trend = if data[index - 1].close < data[index].close: true else: false
+            sim = data[index - duration..index].simulateTrendThreshold budget
+            buy_threshold = sim.buy
+            sell_threshold = sim.sell
+
+        if not trend: # Down Trend
+            if not now_trend: # Trend continuous
+                trend_price_range += int data[index].close - data[index - 1].close
+
+                if trend_price_range < buy_threshold:
+                    if reserve == 0: # Buy Operation
+                        reserve = truncate((budget + float score) / (now_price + spread), 6)
+                        score -= int truncate((now_price + spread) * reserve, 6) - budget
+                        buy_price = now_price
+
+            else: # Trend shift
+                trend = true
+                trend_price_range = int data[index].close - data[index - 1].close
+
+        else: # Up Trend
+            if now_trend: # Trend continuous
+                trend_price_range += int data[index].close - data[index - 1].close
+
+                if trend_price_range > sell_threshold:
+                    if  reserve != 0:# Sell Operation
+                        score += int truncate(now_price * reserve, 6) - budget
+                        reserve = 0
+
+            else: # Trend Shift
+                trend = false
+                trend_price_range = int data[index].close - data[index - 1].close
+
+        if reserve != 0:
+            score_chart.add (truncate(reserve * now_price, 0) - budget) * 100 / budget
+        else:
+            score_chart.add score.float * 100 / budget
+                        
     if reserve != 0:
         score += int truncate(data[data.len - 1].close * reserve, 8) - budget
 
@@ -892,7 +1025,6 @@ proc simulateSimplePriceDiff(data: seq[chart], budget: float): (score, seq[float
     score_chart = newSeq[float](data.len - score_chart.len) & score_chart
 
     (max_score, score_chart)
-
 
 #[ TEST Simulation ]#
 proc bestSimulation(data: seq[chart], budget: float): (score, seq[float]) =
@@ -964,42 +1096,47 @@ when isMainModule:
         #tmd_max = data.simulateThresholdMovingDifference budget
         #stmd_max = data.simulateSimpleTrendMovingDifference budget
         #ttmd_max = data.simulateThresholdTrendMovingDifference(budget, stmd_max.buy, stmd_max.sell)
-        smr_max = data.simulateSimpleMovingReversal budget
-        #tmr_max = data.simulateThresholdMovingReversal budget
-        #mae_max = data.simulateMovingAverageEstimate budget
-        spd_max = data.simulateSimplePriceDiff budget
+        #smr_max = data.simulateSimpleMovingReversal budget
+        tmr_max = data.simulateThresholdMovingReversal budget
+        mae_max = data.simulateMovingAverageEstimate budget
+        #tt_max = data.simulateTrendThreshold budget
+        #att_max = data.simulateAutomatedTrendThreshold(budget, 720)
+
         #smd_max_score_chart = data.simulateSimpleMovingDifference_arg(budget, smd_max.threshold.int)[1]
-        #tmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, tmd_max.threshold.int, tmd_max.price)[1]
+        #stmd_max_score_chart = data.simulateThresholdMovingDifference_arg(budget, stmd_max.threshold.int, stmd_max.price)[1]
         #ttmd_max_score_chart = data.simulateThresholdTrendMovingDifference_arg(budget, ttmd_max.buy, ttmd_max.sell, ttmd_max.price)[1]
-        smr_max_score_chart = data.simulateSimpleMovingReversal_arg(budget, smr_max.threshold)[1]
-        asmr_max_score_chart = data.simulateAutomatedSimpleMovingReversal(budget, 2880)
-        #tmr_max_score_chart = data.simulateThresholdMovingReversal_arg(budget, tmr_max.buy, tmr_max.sell, tmr_max.threshold)[1]
-        #mae_max_score_chart = data.simulateMovingAverageEstimate_arg(budget, mae_max.duration, mae_max.difference, mae_max.threshold, mae_max.price)[1]
-        best_sim = data.bestSimulation budget
+        #smr_max_score_chart = data.simulateSimpleMovingReversal_arg(budget, smr_max.threshold)[1]
+        #asmr_max_score_chart = data.simulateAutomatedSimpleMovingReversal(budget, 1440)
+        tmr_max_score_chart = data.simulateThresholdMovingReversal_arg(budget, tmr_max.buy, tmr_max.sell, tmr_max.threshold)[1]
+        mae_max_score_chart = data.simulateMovingAverageEstimate_arg(budget, mae_max.duration, mae_max.difference, mae_max.threshold, mae_max.price)[1]
+        #tt_max_score_chart = data.simulateTrendThreshold_arg(budget, tt_max.buy, tt_max.sell)[1]
+        #best_sim = data.bestSimulation budget
 
     #echo " SMD  max: ", smd_max
     #echo " TMD  max: ", tmd_max
     #echo "STMD max: ", stmd_max
-    #echo "TTMD max: ", ttmd_max7
-    echo " SMR  max: ", smr_max
-    echo "ASMR  max: ", asmr_max_score_chart[0]
-    #echo " TMR  max: ", tmr_max
-    #echo " MAE  max: ", mae_max
-    echo " SPD  max: ", spd_max[0]
-    echo " BEST SIM: ", best_sim[0]
+    #echo "TTMD max: ", ttmd_max
+    #echo " SMR  max: ", smr_max
+    #echo "ASMR  max: ", asmr_max_score_chart[0]
+    echo " TMR  max: ", tmr_max
+    echo " MAE  max: ", mae_max
+    #echo "  TT  max: ", tt_max
+    #echo " ATT  max: ", att_max[0]
+    #echo " BEST SIM: ", best_sim[0]
 
     horizon.plotter("", "",
         (data_close, "close"),
         #(smd_max_score_chart, &"SMD (threshold: {smd_max.threshold.int})"),
         #(tmd_max_score_chart, &"TMD (threshold: {tmd_max.threshold.int}, price threshold: {tmd_max.price.truncate(4) * 100}%)"),
+        #(stmd_max_score_chart, &"STMD (Buy: {stmd_max.buy}, Sell: {stmd_max.sell}, Price: {stmd_max.price.truncate(4) * 100}%)"),
         #(ttmd_max_score_chart, &"TTMD (Buy: {ttmd_max.buy}, Sell: {ttmd_max.sell}, Price: {ttmd_max.price.truncate(4) * 100}%)"),
-        (smr_max_score_chart, &"SMR (Reverse: {int smr_max.threshold * 100}%)"),
-        (asmr_max_score_chart[1], &"ASMR"),
-        #(tmr_max_score_chart, &"TMR (Buy: {tmr_max.buy}, Sell: {tmr_max.sell}, Reverse: {int tmr_max.threshold * 100}%)"),
-        #(data.simulateThresholdMovingReversal_arg(budget, 500, 500, 0.99)[1], "TMR (Buy: 500, Sell: 500, Reverse: 99%)"),
-        #(mae_max_score_chart, &"MAE (duration: {mae_max.duration}, difference: {mae_max.difference}, threshold: {mae_max.threshold * 100}%, price threshold: {mae_max.price * 100}%)"),
-        (spd_max[1], "SPD max"),
-        (best_sim[1], "BEST SIMULATION")
+        #(smr_max_score_chart, &"SMR (Reverse: {int smr_max.threshold * 100}%)"),
+        #(asmr_max_score_chart[1], &"ASMR"),
+        (tmr_max_score_chart, &"TMR (Buy: {tmr_max.buy}, Sell: {tmr_max.sell}, Reverse: {int tmr_max.threshold * 100}%)"),
+        (mae_max_score_chart, &"MAE (duration: {mae_max.duration}, difference: {mae_max.difference}, threshold: {mae_max.threshold * 100}%, price threshold: {mae_max.price * 100}%)"),
+        #(tt_max_score_chart, "TT max"),
+        #(att_max[1], "ATT max"),
+        #(best_sim[1], "BEST SIMULATION"),
     )
 
     stdout.write "press any key to continue..."

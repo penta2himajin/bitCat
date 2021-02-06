@@ -120,4 +120,3 @@ when isMainModule:
     from ../../token import huobi_token
 
     echo huobi_token.getAccount
-    echo huobi_token.postOrder("market", "btcjpy", "buy", 0.002)

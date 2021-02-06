@@ -15,7 +15,7 @@ func difference*[T](data: seq[T]): seq[T] =
 
 when isMainModule:
     const
-        count = 10
+        count = 15
         spread = 0.0005
         sell = 2
         budget = 5000

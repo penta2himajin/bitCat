@@ -2,12 +2,10 @@
 
 version       = "0.1.0"
 author        = "NaraKenya"
-description   = "A new awesome full-auto trader for cryptcurrency exchange"
+description   = "An awesome full-auto trader for cryptcurrency exchange written by Nim programming language."
 license       = "MIT"
 srcDir        = "src"
-installExt    = @["nim"]
 bin           = @["bitCat"]
-
 
 
 # Dependencies
