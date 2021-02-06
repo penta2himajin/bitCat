@@ -12,5 +12,14 @@ bin           = @["bitCat"]
 # Dependencies
 
 requires "nim >= 1.2.0"
-+ requires "jwt >= 0.2"
-+ requires "hmac >= 0.2.0"
+requires "jwt >= 0.2"
+requires "hmac >= 0.2.0"
+
+
+# Tasks
+
+task build2, "build project":
+  exec "nim c -d:ssl -o:bin/bitCat src/bitCat.nim"
+
+task run2, "build and run project":
+  exec "nim c -d:ssl -o:bin/bitCat -r src/bitCat.nim"
