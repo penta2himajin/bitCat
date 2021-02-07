@@ -1,5 +1,5 @@
 from sequtils import toSeq
-import library/[sandbox, dataman, logic, graph]
+import library/[sandbox, dataman, logic, plotter]
 
 
 func data2Chart(wallet: Wallet, data: seq[Data]): seq[float] =
