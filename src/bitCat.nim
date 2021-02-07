@@ -1,5 +1,4 @@
-import tables
-import wrapper/liquid
+import library/wrapper/liquid
 from token import liquid_token
 
 
