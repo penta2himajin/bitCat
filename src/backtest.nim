@@ -31,13 +31,13 @@ func simulateBiasRatio(wallet: Wallet, data: seq[Data]): seq[float] =
 
   sim_result
 
-func simulateLocalOptimization(wallet: Wallet, data: seq[Data], buy_duration: int, sell_duration: int = buy_duration): seq[float] =
+func simulateLocalOptimization(wallet: Wallet, data: seq[Data], duration: int): seq[float] =
   var
     w = wallet
     sim_result = newSeq[float](1)
   
-  for i in (if buy_duration > sell_duration: buy_duration else: sell_duration)..<data.len:
-    case localOptimization(@(data[i-buy_duration..i]))
+  for i in duration..<data.len:
+    case localOptimization(data[i - duration..i])
     of Buy:
       w = w.order("buy", data[i].ask.float, (w.fiat)/data[i].ask.float)
     of Sell:

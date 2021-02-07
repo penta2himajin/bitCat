@@ -1,7 +1,6 @@
-import tables
+import tables, sugar
 
 export tables
-
 
 type 
   Api* = tuple
@@ -13,7 +12,6 @@ type
     symbol: string
     ask: float
     bid: float
-    spread: float
     last_traded_price: float
     timestamp: int
 
@@ -37,3 +35,9 @@ type
     string,
     float
   ]
+
+
+func closes*(self: seq[Chart]): seq[float] =
+  collect(newSeq):
+    for chart in self:
+      chart.close

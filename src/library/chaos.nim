@@ -12,43 +12,8 @@ func diff_logarithmic*[T](data: openArray[T]): seq[float] =
     for i in 1..<data.len:
       ln(data[i] / data[i - 1])
 
-func seq_round*(data: openArray[float], precision: int): seq[float] =
-  collect(newSeq):
-    for d in data:
-      d.formatFloat(ffDecimal, precision).parseFloat
-
 func `==`[L](left: L, right: type): bool =
   left.type.name == right.type.name
-
-func quadratic*(args: (float, float, float), x: float): float =
-  let (a, b, c) = args
-  a * x^2 + b * x + c
-
-func sim_equs*[T](data: openArray[T], degree: int): (seq[seq[T]], seq[T]) =
-  var
-    x = newSeq[seq[T]](degree)
-    y = newSeq[T](degree)
-  x.fill(newSeq[T](degree))
-
-  for i in 0..<degree:
-    for j in 0..<degree:
-      for k, d in data:
-        y[i] += d^(degree - (i + 1)) * (k + 1).T
-        x[i][j] += d ^ (degree + 1 - (i + j))
-  
-  (x, y)
-
-func mean_squared_error*[T](y, hat_y: openArray[T]): float =
-  if y.len != hat_y.len:
-      var e: ref RangeError
-      new e
-      e.msg = "y length(" & $y.len & ") != hat_y length(" & $hat_y.len & ")"
-      raise e
-
-  var e: float
-  for i in 0..<y.len:
-    e = (y[i] - hat_y[i])^2
-  e / y.len.float
 
 func change_point*[T](data: openArray[T]): seq[int] =
   var ret: seq[int]
@@ -165,6 +130,7 @@ func last_count*[T](data: openArray[T]): int =
     
     return ret - 1
 
+
 func MA*[T](data: openArray[T], period: int): seq[T] =
   collect(newSeq):
       for i in 0..data.len - period:
@@ -243,6 +209,7 @@ func EWMA*[T](data: openArray[T], period: int): seq[float] =
 
       (dsum + data[o+period-1].int * 2^(period - 1)) / (2^(period) - 1)
 
+
 func Seasonal*[T](data: openArray[T], period: int): seq[T] =
   collect(newSeq):
     for i in 0..<data.len - period:
@@ -260,6 +227,7 @@ func Spectra*[T](data: openArray[T], max: int): seq[float] =
     for i in 1..max:
       data.Autocorrelation(i).ln.T
 
+
 func percent_K*(data: openArray[Chart], period: int): float =
   var
     min = data[data.len - 1].low
@@ -271,11 +239,6 @@ func percent_K*(data: openArray[Chart], period: int): float =
 
   (data[data.len - 1].close - min) / (max - min)
 
-func WESICM*[T](data: openArray[T], period: int, last: int): float =
-  let element = collect(newSeq):
-    for i in 0..<last:
-      data[data.len - last + i] * float(i + 1)
-  -element.sum / toSeq(last..period).sum.float
 
 func LU_solve*[T](t: (seq[seq[T]], seq[T])): seq[float] =
   let
