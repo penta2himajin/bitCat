@@ -15,26 +15,28 @@ proc trader(self: Api) =
   try:
     case chart.localOptimization
     of Buy:
-      echo "Operation | Buy  | amount: ", account["JPY"] / product.ask - 0.00001
-      log now().format("yyyy-MM-dd HH:mm:ss") & " : ---TRADE--- " & self.postOrder("market", "btcjpy", "buy", account["JPY"] / product.ask - 0.00001)
+      let response = self.postOrder("market", "btcjpy", "buy", account["JPY"] / product.ask - 0.00001)
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Trade : BUY  |", response
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | ---TRADE--- : BUY  | " & response
     
     of Sell:
-      echo "Operation | Sell | amount: ", account["BTC"]
-      log now().format("yyyy-MM-dd HH:mm:ss") & " : ---TRADE--- " & self.postOrder("market", "btcjpy", "sell", account["BTC"])
+      let response = self.postOrder("market", "btcjpy", "sell", account["BTC"])
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Trade : SELL |", response
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | ---TRADE--- : SELL | " & response
     
     of None: discard
 
   except HttpRequestError:
-      echo "  Error   | HttpRequestError | Received an error message from the server"
-      log now().format("yyyy-MM-dd HH:mm:ss") & " : ***ERROR*** Received an error message from the server."
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Error | HttpRequestError | Received an error message from the server"
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | ***ERROR*** : Received an error message from the server."
 
   except JsonParsingError:
-      echo "  Error   | JsonParsingError | Occured an error at parsing some data"
-      log now().format("yyyy-MM-dd HH:mm:ss") & " : ***ERROR*** Occured an error at parsing some data."
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Error | JsonParsingError | Occured an error at parsing some data"
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | ***ERROR*** : Occured an error at parsing some data."
 
   except:
-      echo "  Error   |   UnknownError   | Unknown error occured"
-      log now().format("yyyy-MM-dd HH:mm:ss") & " : ***ERROR*** Unknown error occured."
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Error |   UnknownError   | Unknown error occured"
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | ***ERROR*** : Unknown error occured."
 
   finally: discard
 
