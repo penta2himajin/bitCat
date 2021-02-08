@@ -19,7 +19,7 @@ cd bitCat
 cp ../token.nim src/token.nim
 nimble build_project
 cp bin/bitCat ../bitCat_exec
-cd ~
+cd ..
 sudo rm -rf bitCat
 mv bitCat_exec bitCat
 
