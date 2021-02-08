@@ -16,7 +16,7 @@ sudo snap install nim-lang --classic
 git clone https://github.com/penta2himajin/bitCat
 sudo chmod 777 bitCat
 cd bitCat
-mv ../token.nim src/token.nim
+cp ../token.nim src/token.nim
 nimble build_project
 cp bin/bitCat ../bitCat_exec
 cd ~
