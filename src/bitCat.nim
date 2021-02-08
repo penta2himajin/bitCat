@@ -6,7 +6,6 @@ from token import liquid_token
 
 
 proc trader(self: Api) =
-  echo "bitCat"
   let
     chart = getChart("btcjpy", "1min", 100)[^50..^1]
     account = self.getAccount
