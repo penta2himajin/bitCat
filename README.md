@@ -23,12 +23,12 @@ crontab -u `whoami` temp
 rm temp
 ```
 
-1. Granting authority to the file.
+2. Granting authority to the file.
 ```
 chmod 766 setup.sh
 ```
 
-1. Execute the file.
+3. Execute the file.
 ```sh
 sh setup.sh
 ```
