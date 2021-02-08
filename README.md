@@ -10,6 +10,7 @@ sudo apt install snap git cron -y
 sudo snap install nim-lang --classic
 
 git clone https://github.com/penta2himajin/bitCat
+sudo chmod 777 bitCat
 cd bitCat
 nimble build_project
 cp bin/bitCat ../bitCat_exec
