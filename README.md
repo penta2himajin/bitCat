@@ -1,6 +1,6 @@
 # bitCat
 ## setup
-###Ubuntu
+### Ubuntu
 
 1. Write this code to some ShellScript file.
 ```sh:setup.sh
@@ -30,5 +30,5 @@ chmod 766 setup.sh
 
 1. Execute the file.
 ```sh
-sudo sh setup.sh
+sh setup.sh
 ```
