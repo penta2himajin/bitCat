@@ -1,7 +1,7 @@
 # bitCat
 ## setup
 Ubuntu
-```shellscript
+```sh
 apt install snap git cron -y
 snap install nim-lang --classic
 
