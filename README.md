@@ -11,7 +11,7 @@ sudo snap install nim-lang --classic
 
 git clone https://github.com/penta2himajin/bitCat
 cd bitCat
-nimble run_project
+nimble build_project
 cp bin/bitCat ../bitCat_exec
 cd ~
 sudo rm -rf bitCat
