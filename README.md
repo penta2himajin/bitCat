@@ -11,7 +11,7 @@ sudo snap install nim-lang --classic
 
 2. Write this code to some ShellScript file.
 ```sh:setup.sh
-#! /bin/sh
+#! /bin/sh -e
 
 git clone https://github.com/penta2himajin/bitCat
 sudo chmod 777 bitCat
