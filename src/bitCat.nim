@@ -11,38 +11,38 @@ proc trader(self: Api) =
     account = self.getAccount
     product = getProduct("btcjpy")
   
-  echo now().format("yyyy-MM-dd HH:mm:ss"), " | Start Processing |"
-  log now().format("yyyy-MM-dd HH:mm:ss") & " | Start Processing |"
+  echo now().format("yyyy-MM-dd HH:mm:ss"), " | INFO  | Start Processing..."
+  log now().format("yyyy-MM-dd HH:mm:ss") & " | INFO  | Start Processing..."
   
   try:
     case chart.localOptimization
     of Buy:
       let response = self.postOrder("market", "btcjpy", "buy", account["JPY"] / product.ask - 0.00001)
-      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Trade : BUY  |", response
-      log now().format("yyyy-MM-dd HH:mm:ss") & " | ---TRADE--- : BUY  | " & response
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | TRADE | BUY  |", response
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | TRADE | BUY  | " & response
     
     of Sell:
       let response = self.postOrder("market", "btcjpy", "sell", account["BTC"])
-      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Trade : SELL |", response
-      log now().format("yyyy-MM-dd HH:mm:ss") & " | ---TRADE--- : SELL | " & response
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | TRADE | SELL |", response
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | TRADE | SELL | " & response
     
     of None: discard
 
   except HttpRequestError:
-      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Error | HttpRequestError | Received an error message from the server"
-      log now().format("yyyy-MM-dd HH:mm:ss") & " | ***ERROR*** : Received an error message from the server."
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | ERROR | HttpRequestError | Received an error message from the server."
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | ERROR | HttpRequestError | Received an error message from the server."
 
   except JsonParsingError:
-      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Error | JsonParsingError | Occured an error at parsing some data"
-      log now().format("yyyy-MM-dd HH:mm:ss") & " | ***ERROR*** : Occured an error at parsing some data."
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | ERROR | JsonParsingError | Occured an error at parsing some data."
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | ERROR | JsonParsingError | Occured an error at parsing some data."
 
   except:
-      echo now().format("yyyy-MM-dd HH:mm:ss"), " | Error |   UnknownError   | Unknown error occured"
-      log now().format("yyyy-MM-dd HH:mm:ss") & " | ***ERROR*** : Unknown error occured."
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | ERROR |   UnknownError   | Unknown error occured."
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | ERROR |   UnknownError   | Unknown error occured."
 
   finally:
-    echo now().format("yyyy-MM-dd HH:mm:ss"), " | Processing Exit |"
-    log now().format("yyyy-MM-dd HH:mm:ss") & " | Processing Exit |"
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | INFO  | Processing Exit."
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | INFO  | Processing Exit."
 
 
 when isMainModule:
