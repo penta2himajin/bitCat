@@ -14,9 +14,8 @@ sudo snap install nim-lang --classic
 #! /bin/sh -e
 
 git clone https://github.com/penta2himajin/bitCat
-sudo chmod 777 bitCat
+cp token.nim bitCat/src/token.nim
 cd bitCat
-cp ../token.nim src/token.nim
 nimble build_project
 cp bin/bitCat ../bitCat_exec
 cd ..
@@ -24,7 +23,7 @@ sudo rm -rf bitCat
 mv bitCat_exec bitCat
 
 crontab -l > temp
-echo "* * * * * ./bitCat" >> temp
+echo "* * * * * `pwd`/bitCat" >> temp
 crontab -u `whoami` temp
 rm temp
 ```
