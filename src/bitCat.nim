@@ -41,8 +41,8 @@ proc trader(self: Api) =
       log now().format("yyyy-MM-dd HH:mm:ss") & " | ERROR |   UnknownError   | Unknown error occured."
 
   finally:
-      echo now().format("yyyy-MM-dd HH:mm:ss"), " | INFO  | Processing Exit."
-      log now().format("yyyy-MM-dd HH:mm:ss") & " | INFO  | Processing Exit."
+      echo now().format("yyyy-MM-dd HH:mm:ss"), " | INFO  | Processing Exited."
+      log now().format("yyyy-MM-dd HH:mm:ss") & " | INFO  | Processing Exited."
 
 
 when isMainModule:
