@@ -74,6 +74,7 @@ proc log*(str: string) =
       file.writeLine "bitCat cryptcurrency full-auto trading system logging file"
       file.writeLine "This log file is created at " & now().format("yyyy-MM-dd HH:mm:ss")
       file.writeLine "--------------------------------------------------"
+      file.writeLine str
 
   else:
     block:
