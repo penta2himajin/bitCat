@@ -1,7 +1,3 @@
-*
-!*/
-!*.*
-*.exe
 /bin
 /.vscode
 token.nim
