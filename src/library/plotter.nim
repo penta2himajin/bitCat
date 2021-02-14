@@ -11,10 +11,4 @@ proc show*[X, Y](x_label: string = "", y_label:string = "", window: int, args: v
   cmd "set grid"
 
   for (x, y, title) in args:
-    if x.len != y.len:
-      var e: ref RangeError
-      new e
-      e.msg = "title: " & title & ", x length " & $x.len & " not equal to arg length " & $y.len
-      raise e
-    
     plot x, y, title
