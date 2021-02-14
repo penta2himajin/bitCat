@@ -17,7 +17,7 @@ proc trader(self: Api) =
   try:
     case chart.localOptimization
     of Buy:
-      let response = self.postOrder("market", "btcjpy", "buy", account["JPY"] / product.ask - 0.00001)
+      let response = self.postOrder("market", "btcjpy", "buy", account["JPY"] / product.ask - 0.000001)
       echo now().format("yyyy-MM-dd HH:mm:ss"), " | TRADE | BUY  |", response
       log now().format("yyyy-MM-dd HH:mm:ss") & " | TRADE | BUY  | " & response
     
