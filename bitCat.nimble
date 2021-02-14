@@ -26,4 +26,7 @@ task run_project, "build and run project":
   exec "nim c -d:ssl -o:" & $binDir & "/" & $packageName & " -r " & $srcDir & "/" & $packageName & ".nim"
 
 task backtest, "build and run backtest":
-  exec "cd liquid_logger && git pull && cd .. && nim c -d:ssl -o:" & $binDir & "/backtest -r " & $srcDir & "/backtest.nim"
+  exec "cd liquid_logger"
+  exec "git pull"
+  exec "cd .."
+  exec "nim c -d:ssl -o:" & $binDir & "/backtest -r " & $srcDir & "/backtest.nim"

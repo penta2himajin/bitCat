@@ -5,5 +5,5 @@
 /bin
 /.vscode
 token.nim
-data_log.txt
+liquid.log
 bitCat.log
