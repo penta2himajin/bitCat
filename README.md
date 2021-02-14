@@ -9,7 +9,7 @@ sudo apt install snap git cron -y
 sudo snap install nim-lang --classic
 ```
 
-2. Write this code to some ShellScript file.
+2. Write this code to ShellScript file "setup.sh".
 ```Shell
 #! /bin/sh -e
 
