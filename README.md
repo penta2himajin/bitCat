@@ -26,6 +26,8 @@ crontab -l > temp
 echo "* * * * * `pwd`/bitCat" >> temp
 crontab -u `whoami` temp
 rm temp
+
+rm setup.sh
 ```
 
 3. Granting authority to the file.
