@@ -17,8 +17,8 @@ git clone https://github.com/penta2himajin/bitCat
 cp token.nim bitCat/src/token.nim
 cd bitCat
 nimble build_project
-cp bin/bitCat ../bitCat_exec
 cd ..
+cp bitCat/bin/bitCat bitCat_exec
 sudo rm -rf bitCat
 mv bitCat_exec bitCat
 
