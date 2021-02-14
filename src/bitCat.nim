@@ -11,6 +11,9 @@ proc trader(self: Api) =
     account = self.getAccount
     product = getProduct("btcjpy")
   
+  echo now().format("yyyy-MM-dd HH:mm:ss"), " | Start Processing |"
+  log now().format("yyyy-MM-dd HH:mm:ss") & " | Start Processing |"
+  
   try:
     case chart.localOptimization
     of Buy:
@@ -37,7 +40,9 @@ proc trader(self: Api) =
       echo now().format("yyyy-MM-dd HH:mm:ss"), " | Error |   UnknownError   | Unknown error occured"
       log now().format("yyyy-MM-dd HH:mm:ss") & " | ***ERROR*** : Unknown error occured."
 
-  finally: discard
+  finally:
+    echo now().format("yyyy-MM-dd HH:mm:ss"), " | Processing Exit |"
+    log now().format("yyyy-MM-dd HH:mm:ss") & " | Processing Exit |"
 
 
 when isMainModule:
