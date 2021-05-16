@@ -1,7 +1,7 @@
 import strformat, gnuplot
 
 
-proc show*[X, Y](x_label: string = "", y_label:string = "", window: int, args: varargs[(seq[X], seq[Y], string)]) =
+proc show*[X, Y](x_label: string = "", y_label:string = "", window: int, args: openArray[(seq[X], seq[Y], string)]) =
   cmd &"set term wxt {$window}"
   if x_label != "": cmd &"set xlabel '{x_label}' tc rgb \"white\""
   if x_label != "": cmd &"set ylabel '{y_label}' tc rgb \"white\""

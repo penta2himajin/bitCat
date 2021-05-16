@@ -9,8 +9,9 @@ const end_point = "https://api.liquid.com"
 #[ Public API ]#
 proc getProducts*(): seq[Product] =
   let
+    path = "/products"
     client = newHttpClient()
-    products_json = client.getContent(end_point & "/products").parseJson
+    products_json = client.getContent(end_point & path).parseJson
   
   collect(newSeq):
     for product_json in products_json:

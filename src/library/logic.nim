@@ -1,5 +1,5 @@
 import algorithm, math
-import dataman, wrapper/types
+import dataman, wrapper/types, chaos
 
 export dataman, types
 
@@ -63,5 +63,46 @@ func priceSpring*(data: seq[Data], threshold: float): Operation =
     Sell#Buy
   elif data[^1].bid < int floor data.sorted(bidCmp)[^1].bid.float * (1.0 - threshold):
     Buy#Sell
+  else:
+    None
+
+proc expX*(data: seq[Data], duration: int): Operation =
+  let pv_ema = data.pvs.EMA(duration)
+  if data[^1].ask < pv_ema[^1]:
+    Buy
+  elif pv_ema[^1] < data[^1].bid:
+    Sell
+  else:
+    None
+
+func thresholdEMA*(data: seq[Data], duration, up, down: int): Operation =
+  let pv_ema = data.pvs.EMA duration
+  if up < (pv_ema[^1] - pv_ema[0]):
+    Buy
+  elif (pv_ema[^1] - pv_ema[0]) < down:
+    Sell
+  else:
+    None
+
+func crossTrade*(data: seq[Data], short, long: int): Operation =
+  let
+    short_ma = data.pvs.EMA(short)[^1]
+    long_ma = data.pvs.EMA(long)[^1]
+  
+  if long_ma < short_ma:
+    Buy
+  elif short_ma < long_ma:
+    Sell
+  else:
+    None
+
+func changePoint*(data: seq[Data]): Operation =
+  let
+    rci = data.pvs.RCI
+  
+  if 80 < rci:
+    Buy
+  elif rci < -80:
+    Sell
   else:
     None

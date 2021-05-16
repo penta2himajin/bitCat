@@ -1,4 +1,4 @@
-import strutils, strformat, math, sequtils, sugar, times, os, algorithm
+import system, strutils, strformat, math, sequtils, sugar, times, os, algorithm
 import wrapper/types
 
 
@@ -14,6 +14,11 @@ func diff_logarithmic*[T](data: openArray[T]): seq[float] =
 
 func `==`[L](left: L, right: type): bool =
   left.type.name == right.type.name
+
+func `-&`*[T](data: seq[T], right: T): seq[T] =
+  collect(newSeq):
+    for d in data:
+      d - right
 
 func change_point*[T](data: openArray[T]): seq[int] =
   var ret: seq[int]
@@ -131,10 +136,10 @@ func last_count*[T](data: openArray[T]): int =
     return ret - 1
 
 
-func MA*[T](data: openArray[T], period: int): seq[T] =
+func MA*[T](data: openArray[T], period: int): seq[float] =
   collect(newSeq):
-      for i in 0..data.len - period:
-        data[i..<i+period].sum / period.T
+    for i in 0..data.len - period:
+      data[i..<i+period].sum / period.T
 
 func TMA*[T](data: openArray[T], period: int): seq[T] =
   data.MA(period).MA(period)
@@ -168,9 +173,9 @@ func EMA*[T](data: openArray[T], period: int): seq[T] =
   var ret = newSeq[T](data.len - period + 1)
   for i in 0..data.len - period:
     if i == 0:
-      ret[0] = data[i..<i + period].MA(period)[0]
+      ret[0] = int data[i..<i + period].MA(period)[0]
     else:
-      ret[i] = ret[i - 1] * (1 - (2/(period + 1))) + data[i + period - 1] * (2/(period + 1))
+      ret[i] = int ret[i - 1].float * (1 - (2/(period + 1))) + data[i + period - 1].float * (2/(period + 1))
   
   ret
 
@@ -208,6 +213,21 @@ func EWMA*[T](data: openArray[T], period: int): seq[float] =
         dsum += d.int * 2^i
 
       (dsum + data[o+period-1].int * 2^(period - 1)) / (2^(period) - 1)
+
+func RCI*[T](data: openArray[T]): int =
+  let
+    sorted_data = sorted data
+    day_ranking = reversed toSeq 1..data.len
+    price_ranking = collect newSeq:
+      for i in 0..<data.len:
+        sorted_data.find data[i]
+  var
+    d = 0
+  
+  for i in 0..<data.len:
+    d += (day_ranking[i] - price_ranking[i])^2
+  
+  int( (1 - (6 * d) / (data.len * (data.len^2 - 1) ) ) * 100 )
 
 
 func Seasonal*[T](data: openArray[T], period: int): seq[T] =
